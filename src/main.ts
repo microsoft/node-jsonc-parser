@@ -71,7 +71,7 @@ export interface JSONScanner {
 	getTokenError(): ScanError;
 }
 /**
- * Create a JSON scanner on the given text.
+ * Creates a JSON scanner on the given text.
  * If ignoreTrivia is set, whitespaces or comments are ignored.
  */
 export function createScanner(text:string, ignoreTrivia:boolean = false):JSONScanner {
