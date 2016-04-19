@@ -70,18 +70,21 @@ export interface JSONScanner {
 
 ### Parser:
 ```typescript
+
+export interface ParseOptions {
+    disallowComments?: boolean;
+}
 /**
- * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault tolerant as possible and still return a result.
+ * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault lolerant as possible, but still return a result.
  * Therefore always check the errors list to find out if the input was valid.
  */
-export declare function parse(text: string, errors?: {
-    error: ParseErrorCode;
-}[]): any;
+export declare function parse(text: string, errors?: {error: ParseErrorCode;}[], options?: ParseOptions): any;
 
 /**
  * Parses the given text and invokes the visitor functions for each object, array and literal reached.
  */
-export declare function visit(text: string, visitor: JSONVisitor): any;
+export declare function visit(text: string, visitor: JSONVisitor, options?: ParseOptions): any;
+
 export interface JSONVisitor {
     /**
      * Invoked when an open brace is encountered and an object is started. The offset and length represent the location of the open brace.

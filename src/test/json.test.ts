@@ -5,7 +5,7 @@
 'use strict';
 
 import * as assert from 'assert';
-import { SyntaxKind, createScanner, parse, getLocation,  ParseErrorCode, getParseErrorMessage } from '../main';
+import { SyntaxKind, createScanner, parse, getLocation,  ParseErrorCode, getParseErrorMessage, ParseOptions } from '../main';
 
 function assertKinds(text:string, ...kinds:SyntaxKind[]):void {
 	var _json = createScanner(text);
@@ -17,9 +17,9 @@ function assertKinds(text:string, ...kinds:SyntaxKind[]):void {
 }
 
 
-function assertValidParse(input:string, expected:any) : void {
+function assertValidParse(input:string, expected:any, options?: ParseOptions) : void {
 	var errors : {error: ParseErrorCode}[] = [];
-	var actual = parse(input, errors);
+	var actual = parse(input, errors, options);
 
 	if (errors.length !== 0) {
 		assert(false, getParseErrorMessage(errors[0].error));
@@ -27,9 +27,9 @@ function assertValidParse(input:string, expected:any) : void {
 	assert.deepEqual(actual, expected);
 }
 
-function assertInvalidParse(input:string, expected:any) : void {
+function assertInvalidParse(input:string, expected:any, options?: ParseOptions) : void {
 	var errors : {error: ParseErrorCode}[] = [];
-	var actual = parse(input, errors);
+	var actual = parse(input, errors, options);
 
 	assert(errors.length > 0);
 	assert.deepEqual(actual, expected);
@@ -158,7 +158,7 @@ suite('JSON', () => {
 		assertValidParse('23e3', 23e3);
 		assertValidParse('1.2E+3', 1.2E+3);
 		assertValidParse('1.2E-3', 1.2E-3);
-
+		assertValidParse('1.2E-3 // comment', 1.2E-3);
 	});
 
 	test('parse: objects', () => {
@@ -170,6 +170,7 @@ suite('JSON', () => {
 		assertValidParse('{ "lineComment": "//", "blockComment": ["/*", "*/"], "brackets": [ ["{", "}"], ["[", "]"], ["(", ")"] ] }', { lineComment: '//', blockComment: ["/*", "*/"], brackets: [ ["{", "}"], ["[", "]"], ["(", ")"] ] });
 		assertValidParse('{ "hello": [], "world": {} }', { hello: [], world: {} });
 		assertValidParse('{ "hello": { "again": { "inside": 5 }, "world": 1 }}', { hello: { again: { inside: 5 }, world: 1 }});
+		assertValidParse('{ "foo": /*hello*/true }', { foo: true });
 	});
 
 	test('parse: arrays', () => {
@@ -196,6 +197,15 @@ suite('JSON', () => {
 		assertInvalidParse('[ ,1, 2, 3 ]', [ 1, 2, 3 ]);
 		assertInvalidParse('[ ,1, 2, 3, ]', [ 1, 2, 3 ]);
 	});
+	
+	test('parse: disallow commments', () => {
+		let options = { disallowComments: true };
+		
+		assertValidParse('[ 1, 2, null, "foo" ]', [ 1, 2, null, "foo"], options);
+		assertValidParse('{ "hello": [], "world": {} }', { hello: [], world: {} }, options);
+		
+		assertInvalidParse('{ "foo": /*comment*/ true }', { foo: true }, options);
+	});	
 
 	test('location: properties', () => {
 		assertLocation('|{ "foo": "bar" }', [], void 0, false);

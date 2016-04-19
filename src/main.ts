@@ -81,7 +81,7 @@ export interface JSONScanner {
  */
 export function createScanner(text:string, ignoreTrivia:boolean = false):JSONScanner {
 
-	var pos = 0,
+	let pos = 0,
 		len = text.length,
 		value:string = '',
 		tokenOffset = 0,
@@ -89,10 +89,10 @@ export function createScanner(text:string, ignoreTrivia:boolean = false):JSONSca
 		scanError:ScanError = ScanError.None;
 
 	function scanHexDigits(count: number, exact?: boolean): number {
-		var digits = 0;
-		var value = 0;
+		let digits = 0;
+		let value = 0;
 		while (digits < count || !exact) {
-			var ch = text.charCodeAt(pos);
+			let ch = text.charCodeAt(pos);
 			if (ch >= CharacterCodes._0 && ch <= CharacterCodes._9) {
 				value = value * 16 + ch - CharacterCodes._0;
 			}
@@ -123,7 +123,7 @@ export function createScanner(text:string, ignoreTrivia:boolean = false):JSONSca
 	}
 
 	function scanNumber(): string {
-		var start = pos;
+		let start = pos;
 		if (text.charCodeAt(pos) === CharacterCodes._0) {
 			pos++;
 		} else {
@@ -141,10 +141,10 @@ export function createScanner(text:string, ignoreTrivia:boolean = false):JSONSca
 				}
 			} else {
 				scanError = ScanError.UnexpectedEndOfNumber;
-				return text.substring(start, end);
+				return text.substring(start, pos);
 			}
 		}
-		var end = pos;
+		let end = pos;
 		if (pos < text.length && (text.charCodeAt(pos) === CharacterCodes.E || text.charCodeAt(pos) === CharacterCodes.e)) {
 			pos++;
 			if (pos < text.length && text.charCodeAt(pos) === CharacterCodes.plus || text.charCodeAt(pos) === CharacterCodes.minus) {
@@ -165,7 +165,7 @@ export function createScanner(text:string, ignoreTrivia:boolean = false):JSONSca
 
 	function scanString(): string {
 
-		var result = '',
+		let result = '',
 			start = pos;
 
 		while (true) {
@@ -174,7 +174,7 @@ export function createScanner(text:string, ignoreTrivia:boolean = false):JSONSca
 				scanError = ScanError.UnexpectedEndOfString;
 				break;
 			}
-			var ch = text.charCodeAt(pos);
+			let ch = text.charCodeAt(pos);
 			if (ch === CharacterCodes.doubleQuote) {
 				result += text.substring(start, pos);
 				pos++;
@@ -214,7 +214,7 @@ export function createScanner(text:string, ignoreTrivia:boolean = false):JSONSca
 						result += '\t';
 						break;
 					case CharacterCodes.u:
-						var ch = scanHexDigits(4, true);
+						let ch = scanHexDigits(4, true);
 						if (ch >= 0) {
 							result += String.fromCharCode(ch);
 						} else {
@@ -250,7 +250,7 @@ export function createScanner(text:string, ignoreTrivia:boolean = false):JSONSca
 			return token = SyntaxKind.EOF;
 		}
 
-		var code = text.charCodeAt(pos);
+		let code = text.charCodeAt(pos);
 		// trivia: whitespace
 		if (isWhiteSpace(code)) {
 			do {
@@ -302,7 +302,7 @@ export function createScanner(text:string, ignoreTrivia:boolean = false):JSONSca
 
 			// comments
 			case CharacterCodes.slash:
-				var start = pos - 1;
+				let start = pos - 1;
 				// Single-line comment
 				if (text.charCodeAt(pos + 1) === CharacterCodes.slash) {
 					pos += 2;
@@ -322,10 +322,10 @@ export function createScanner(text:string, ignoreTrivia:boolean = false):JSONSca
 				if (text.charCodeAt(pos + 1) === CharacterCodes.asterisk) {
 					pos += 2;
 
-					var safeLength = len - 1; // For lookahead.
-					var commentClosed = false;
+					let safeLength = len - 1; // For lookahead.
+					let commentClosed = false;
 					while (pos < safeLength) {
-						var ch = text.charCodeAt(pos);
+						let ch = text.charCodeAt(pos);
 
 						if (ch === CharacterCodes.asterisk && text.charCodeAt(pos + 1) === CharacterCodes.slash) {
 							pos += 2;
@@ -413,7 +413,7 @@ export function createScanner(text:string, ignoreTrivia:boolean = false):JSONSca
 
 
 	function scanNextNonTrivia():SyntaxKind {
-		var result : SyntaxKind;
+		let result : SyntaxKind;
 		do {
 			result = scanNext();
 		} while (result >= SyntaxKind.LineCommentTrivia && result <= SyntaxKind.Trivia);
@@ -595,7 +595,7 @@ enum CharacterCodes {
  */
 export function stripComments(text:string, replaceCh?:string):string {
 
-	var _scanner = createScanner(text),
+	let _scanner = createScanner(text),
 		parts: string[] = [],
 		kind:SyntaxKind,
 		offset = 0,
@@ -683,15 +683,16 @@ export function getLocation(text:string, position: number) : Location {
 	};
 	let completeProperty = false;
 	let hasComma = false;
+	function setPreviousNode(value: string, offset: number, length: number, type: NodeType) {
+		previousNodeInst.value = value;
+		previousNodeInst.offset = offset;
+		previousNodeInst.length = length;
+		previousNodeInst.type = type;
+		previousNodeInst.columnOffset = void 0;
+		previousNode = previousNodeInst;
+	}	
 	try {
-		function setPreviousNode(value: string, offset: number, length: number, type: NodeType) {
-			previousNodeInst.value = value;
-			previousNodeInst.offset = offset;
-			previousNodeInst.length = length;
-			previousNodeInst.type = type;
-			previousNodeInst.columnOffset = void 0;
-			previousNode = previousNodeInst;
-		}
+
 		visit(text, {
 			onObjectBegin: (offset: number, length: number) => {
 				if (position <= offset) {
@@ -792,11 +793,15 @@ export function getLocation(text:string, position: number) : Location {
 	};
 }
 
+export interface ParseOptions {
+	disallowComments?: boolean;
+}
+
 /**
  * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault lolerant as possible, but still return a result.
  * Therefore always check the errors list to find out if the input was valid.
  */
-export function parse(text:string, errors: { error:ParseErrorCode; }[] = []) : any {
+export function parse(text:string, errors: { error:ParseErrorCode; }[] = [], options?: ParseOptions) : any {
 	let currentProperty : string = null;
 	let currentParent : any = [];
 	let previousParents : any[] = [];
@@ -838,15 +843,16 @@ export function parse(text:string, errors: { error:ParseErrorCode; }[] = []) : a
 			errors.push({error: error});
 		}
 	};
-	visit(text, visitor);
+	visit(text, visitor, options);
 	return currentParent[0];
 }
 
 /**
  * Parses the given text and invokes the visitor functions for each object, array and literal reached.
  */
-export function visit(text:string, visitor: JSONVisitor) : any {
-	var _scanner = createScanner(text, true);
+export function visit(text:string, visitor: JSONVisitor, options?: ParseOptions) : any {
+	
+	let _scanner = createScanner(text, false);
 
 	function toNoArgVisit(visitFunction: (offset: number, length: number) => void) : () => void {
 		return visitFunction ? () => visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength()) : () => true;
@@ -864,19 +870,32 @@ export function visit(text:string, visitor: JSONVisitor) : any {
 		onSeparator = toOneArgVisit(visitor.onSeparator),
 		onError = toOneArgVisit(visitor.onError);
 
+	let disallowComments = options && options.disallowComments;
 	function scanNext() : SyntaxKind {
-		var token = _scanner.scan();
-		while (token === SyntaxKind.Unknown) {
-			handleError(ParseErrorCode.InvalidSymbol);
-			token = _scanner.scan();
+		while (true) {
+			let token = _scanner.scan();
+			switch (token) {
+				case SyntaxKind.LineCommentTrivia:
+				case SyntaxKind.BlockCommentTrivia:
+					if (disallowComments) {
+						handleError(ParseErrorCode.InvalidSymbol);
+					}
+					break;
+				case SyntaxKind.Unknown:
+					handleError(ParseErrorCode.InvalidSymbol);
+					break;
+				case SyntaxKind.Trivia:
+					break;
+				default:
+					return token;
+			}
 		}
-		return token;
 	}
 
 	function handleError(error:ParseErrorCode, skipUntilAfter: SyntaxKind[] = [], skipUntil: SyntaxKind[] = []) : void {
 		onError(error);
 		if (skipUntilAfter.length + skipUntil.length > 0) {
-			var token = _scanner.getToken();
+			let token = _scanner.getToken();
 			while (token !== SyntaxKind.EOF) {
 				if (skipUntilAfter.indexOf(token) !== -1) {
 					scanNext();
@@ -893,7 +912,7 @@ export function visit(text:string, visitor: JSONVisitor) : any {
 		if (_scanner.getToken() !== SyntaxKind.StringLiteral) {
 			return false;
 		}
-		var value = _scanner.getTokenValue();
+		let value = _scanner.getTokenValue();
 		if (isValue) {
 			onLiteralValue(value);
 		} else {
@@ -959,7 +978,7 @@ export function visit(text:string, visitor: JSONVisitor) : any {
 		onObjectBegin();
 		scanNext(); // consume open brace
 
-		var needsComma = false;
+		let needsComma = false;
 		while (_scanner.getToken() !== SyntaxKind.CloseBraceToken && _scanner.getToken() !== SyntaxKind.EOF) {
 			if (_scanner.getToken() === SyntaxKind.CommaToken) {
 				if (!needsComma) {
@@ -991,7 +1010,7 @@ export function visit(text:string, visitor: JSONVisitor) : any {
 		onArrayBegin();
 		scanNext(); // consume open bracket
 
-		var needsComma = false;
+		let needsComma = false;
 		while (_scanner.getToken() !== SyntaxKind.CloseBracketToken && _scanner.getToken() !== SyntaxKind.EOF) {
 			if (_scanner.getToken() === SyntaxKind.CommaToken) {
 				if (!needsComma) {
