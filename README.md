@@ -1,8 +1,8 @@
 # jsonc-parser
 Scanner and parser for JSON with comments.
 
-[![npm Package](https://img.shields.io/npm/v/jsonfile.svg?style=flat-square)](https://www.npmjs.org/package/jsonc-parser)
-[![NPM Downloads](https://img.shields.io/npm/dm/vscode-nls.svg)](https://npmjs.org/package/jsonc-parser)
+[![npm Package](https://img.shields.io/npm/v/jsonc-parser.svg?style=flat-square)](https://www.npmjs.org/package/jsonc-parser)
+[![NPM Downloads](https://img.shields.io/npm/dm/jsonc-parser.svg)](https://npmjs.org/package/jsonc-parser)
 
 Why?
 ----
