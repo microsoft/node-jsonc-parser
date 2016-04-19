@@ -885,6 +885,7 @@ export function visit(text:string, visitor: JSONVisitor, options?: ParseOptions)
 					handleError(ParseErrorCode.InvalidSymbol);
 					break;
 				case SyntaxKind.Trivia:
+				case SyntaxKind.LineBreakTrivia:
 					break;
 				default:
 					return token;
