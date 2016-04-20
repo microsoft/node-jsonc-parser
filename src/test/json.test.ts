@@ -5,7 +5,7 @@
 'use strict';
 
 import * as assert from 'assert';
-import { SyntaxKind, createScanner, parse, getLocation,  ParseErrorCode, getParseErrorMessage, ParseOptions } from '../main';
+import { SyntaxKind, createScanner, parse, getLocation,  ParseErrorCode, getParseErrorMessage, ParseOptions, Segment } from '../main';
 
 function assertKinds(text:string, ...kinds:SyntaxKind[]):void {
 	var _json = createScanner(text);
@@ -35,15 +35,15 @@ function assertInvalidParse(input:string, expected:any, options?: ParseOptions) 
 	assert.deepEqual(actual, expected);
 }
 
-function assertLocation(input:string, expectedSegments: string[], expectedNodeType: string, expectedCompleteProperty: boolean) : void {
+function assertLocation(input:string, expectedSegments: Segment[], expectedNodeType: string, expectedCompleteProperty: boolean) : void {
 	var errors : {error: ParseErrorCode}[] = [];
 	var offset = input.indexOf('|');
 	input = input.substring(0, offset) + input.substring(offset+1, input.length);
 	var actual = getLocation(input, offset);
 	assert(actual);
-	assert.deepEqual(actual.segments, expectedSegments, input);
+	assert.deepEqual(actual.path, expectedSegments, input);
 	assert.equal(actual.previousNode && actual.previousNode.type, expectedNodeType, input);
-	assert.equal(actual.completeProperty, expectedCompleteProperty, input);
+	assert.equal(actual.isAtPropertyKey, expectedCompleteProperty, input);
 }
 
 suite('JSON', () => {
@@ -223,14 +223,19 @@ suite('JSON', () => {
 		assertLocation('{ "foo": {"bar": 1, "car": 7 }| }', ["foo"], void 0, false);
 		assertLocation('{ "foo": {"bar": 1, "car": 8 },| "goo": {} }', [], void 0, true);
 		assertLocation('{ "foo": {"bar": 1, "car": 9 }, "go|o": {} }', ["goo" ], "property", true);
+		assertLocation('{ "dep": {"bar": 1, "car": |', ["dep", "car" ], void 0, false);
+		assertLocation('{ "dep": {"bar": 1,, "car": |', ["dep", "car" ], void 0, false);
+		assertLocation('{ "dep": {"bar": "na", "dar": "ma", "car": | } }', ["dep", "car" ], void 0, false);
 	});
 	
 	test('location: arrays', () => {
 		assertLocation('|["foo", null ]', [], void 0, false);
-		assertLocation('[|"foo", null ]', ["[0]"], "string", false);
-		assertLocation('["foo"|, null ]', ["[0]"], "string", false);
-		assertLocation('["foo",| null ]', ["[1]"], void 0, false);
-		assertLocation('["foo", |null ]', ["[1]"], "null", false);
-		assertLocation('["foo", null,| ]', ["[2]"], void 0, false);
+		assertLocation('[|"foo", null ]', [0], "string", false);
+		assertLocation('["foo"|, null ]', [0], "string", false);
+		assertLocation('["foo",| null ]', [1], void 0, false);
+		assertLocation('["foo", |null ]', [1], "null", false);
+		assertLocation('["foo", null,| ]', [2], void 0, false);
+		assertLocation('["foo", null,,| ]', [3], void 0, false);
+		assertLocation('[["foo", null,, ],|', [1], void 0, false);
 	});
 });

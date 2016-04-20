@@ -133,9 +133,33 @@ export interface JSONVisitor {
 export declare function stripComments(text: string, replaceCh?: string): string;
 
 /**
- * For a given offset, evaluate the location in the JSON document. Each segment in a location is either a property names or an array accessors.
+ * For a given offset, evaluate the location in the JSON document. Each segment in the location path is either a property name or an array index.
  */
 export declare function getLocation(text: string, position: number): Location;
+
+export declare type Segment = string | number;
+export interface Location {
+    /**
+     * The previous property key or literal value (string, number, boolean or null) or undefined.
+     */
+    previousNode?: Node;
+    /**
+     * The path describing the location in the JSON document. The path consists of a sequence strings
+     * representing an object property or numbers for array indices.
+     */
+    path: Segment[];
+    /**
+     * Matches the locations path against a pattern consisting of strings (for properties) and numbers (for array indices).
+     * '*' will match a single segment, of any property name or index.
+     * '**' will match a sequece of segments or no segment, of any property name or index.
+     */
+    matches: (patterns: Segment[]) => boolean;
+    /**
+     * If set, the location's offset is at a property key.
+     */
+    isAtPropertyKey: boolean;
+}
+
 ```
 
 
