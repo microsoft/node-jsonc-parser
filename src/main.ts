@@ -446,10 +446,6 @@ function isDigit(ch: number): boolean {
 	return ch >= CharacterCodes._0 && ch <= CharacterCodes._9;
 }
 
-function isLetter(ch: number): boolean {
-	return ch >= CharacterCodes.a && ch <= CharacterCodes.z || ch >= CharacterCodes.A && ch <= CharacterCodes.Z;
-}
-
 enum CharacterCodes {
 	nullCharacter = 0,
 	maxAsciiCharacter = 0x7F,
@@ -620,6 +616,10 @@ export function stripComments(text:string, replaceCh?:string):string {
 	} while(kind !== SyntaxKind.EOF);
 
 	return parts.join('');
+}
+
+export interface ParseError {
+	error: ParseErrorCode;
 }
 
 export enum ParseErrorCode {
@@ -801,7 +801,7 @@ export interface ParseOptions {
  * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault lolerant as possible, but still return a result.
  * Therefore always check the errors list to find out if the input was valid.
  */
-export function parse(text:string, errors: { error:ParseErrorCode; }[] = [], options?: ParseOptions) : any {
+export function parse(text:string, errors: ParseError[] = [], options?: ParseOptions) : any {
 	let currentProperty : string = null;
 	let currentParent : any = [];
 	let previousParents : any[] = [];
