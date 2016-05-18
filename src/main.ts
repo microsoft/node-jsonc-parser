@@ -650,14 +650,25 @@ export function getParseErrorMessage(errorCode: ParseErrorCode) : string {
 	}
 }
 
-export type NodeType = "object" | "array" | "property" | "string" | "number" | "null";
+export type NodeType = "object" | "array" | "property" | "string" | "number" | "boolean" | "null";
+
+function getLiteralNodeType(value: any) : NodeType {
+	switch (typeof value) {
+		case 'boolean': return 'boolean';
+		case 'number': return 'number';
+		case 'string': return 'string';
+		default: return 'null';
+	}
+}
 
 export interface Node {
 	type: NodeType;
-	value: any;
+	value?: any;
 	offset: number;
 	length: number;
 	columnOffset?: number;
+	parent?: Node;
+	children?: Node[];
 }
 
 export type Segment = string | number;
@@ -753,7 +764,8 @@ export function getLocation(text:string, position: number) : Location {
 				if (position < offset) {
 					throw earlyReturnException;
 				}
-				setPreviousNode(value, offset, length, value === null ? 'null' : (typeof value === 'string' ? 'string' : 'number'));
+				setPreviousNode(value, offset, length, getLiteralNodeType(value));
+
 				if (position <= offset + length) {
 					throw earlyReturnException;
 				}
@@ -810,7 +822,7 @@ export interface ParseOptions {
 }
 
 /**
- * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault lolerant as possible, but still return a result.
+ * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
  * Therefore always check the errors list to find out if the input was valid.
  */
 export function parse(text:string, errors: ParseError[] = [], options?: ParseOptions) : any {
@@ -826,7 +838,7 @@ export function parse(text:string, errors: ParseError[] = [], options?: ParseOpt
 		}
 	}
 
-	let visitor = {
+	let visitor : JSONVisitor = {
 		onObjectBegin: () => {
 			let object = {};
 			onValue(object);
@@ -857,6 +869,69 @@ export function parse(text:string, errors: ParseError[] = [], options?: ParseOpt
 	};
 	visit(text, visitor, options);
 	return currentParent[0];
+}
+
+
+/**
+ * Parses the given text and returns a tree representation the JSON content. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
+ */
+export function parseTree(text:string, errors: ParseError[] = [], options?: ParseOptions) : Node {
+	let currentParent : Node = { type: 'array', offset: -1, length: -1, children: [] }; // artificial root
+
+	function ensurePropertyComplete(endOffset:number) {
+		if (currentParent.type === 'property') {
+			currentParent.length = endOffset - currentParent.offset;
+			currentParent = currentParent.parent;
+		}
+	}
+
+	function onValue(valueNode: Node) : Node {
+		currentParent.children.push(valueNode);
+		ensurePropertyComplete(valueNode.offset + valueNode.length);
+		return valueNode;
+	}
+
+	let visitor : JSONVisitor = {
+		onObjectBegin: (offset: number) => {
+			currentParent = onValue({ type: 'object', offset, length: -1, parent: currentParent, children: [] });
+		},
+		onObjectProperty: (name: string, offset: number, length: number) => {
+			currentParent = onValue({ type: 'property', offset, length: -1, parent: currentParent, children: [] });
+			currentParent.children.push({ type: 'string', value: name, offset, length, parent: currentParent});
+		},
+		onObjectEnd: (offset: number, length: number) => {
+			ensurePropertyComplete(offset);
+			currentParent.length = offset + length - currentParent.offset;
+			currentParent = currentParent.parent;
+		},
+		onArrayBegin: (offset: number, length: number) => {
+			currentParent = onValue({ type: 'array', offset, length: -1, parent: currentParent, children: [] });
+		},
+		onArrayEnd: (offset: number, length: number) => {
+			currentParent.length = offset + length - currentParent.offset;
+			currentParent = currentParent.parent;
+		},
+		onLiteralValue: (value: any, offset: number, length: number) => {
+			onValue({ type: getLiteralNodeType(value), offset, length, parent: currentParent, value });
+		},
+		onSeparator: (sep: string, offset: number, length: number) => {
+			if (currentParent.type === 'property') {
+				if (sep === ':') {
+					currentParent.columnOffset = offset;
+				} else if (sep === ',') {
+					ensurePropertyComplete(offset);
+				}
+			}
+		},
+		onError:(error:ParseErrorCode) => {
+			errors.push({error: error});
+		}
+	};
+	visit(text, visitor, options);
+	
+	let result = currentParent.children[0];
+	delete result.parent;
+	return result;
 }
 
 /**

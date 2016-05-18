@@ -120,6 +120,21 @@ export interface JSONVisitor {
     onError?: (error: ParseErrorCode, offset: number, length: number) => void;
 }
 
+/**
+ * Parses the given text and returns a tree representation the JSON content. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
+ */
+export declare function parseTree(text: string, errors?: ParseError[], options?: ParseOptions): Node;
+
+export declare type NodeType = "object" | "array" | "property" | "string" | "number" | "boolean" | "null";
+export interface Node {
+    type: NodeType;
+    value?: any;
+    offset: number;
+    length: number;
+    columnOffset?: number;
+    parent?: Node;
+    children?: Node[];
+}
 
 ```
 
@@ -159,6 +174,8 @@ export interface Location {
      */
     isAtPropertyKey: boolean;
 }
+
+
 
 ```
 

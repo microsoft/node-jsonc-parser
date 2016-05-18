@@ -5,7 +5,7 @@
 'use strict';
 
 import * as assert from 'assert';
-import { SyntaxKind, createScanner, parse, getLocation,  ParseErrorCode, getParseErrorMessage, ParseOptions, Segment } from '../main';
+import { SyntaxKind, createScanner, parse, getLocation, Node, ParseError, parseTree, ParseErrorCode, getParseErrorMessage, ParseOptions, Segment } from '../main';
 
 function assertKinds(text:string, ...kinds:SyntaxKind[]):void {
 	var _json = createScanner(text);
@@ -34,6 +34,26 @@ function assertInvalidParse(input:string, expected:any, options?: ParseOptions) 
 	assert(errors.length > 0);
 	assert.deepEqual(actual, expected);
 }
+
+function assertTree(input:string, expected:any) : void {
+	var errors : ParseError[] = [];
+	var actual = parseTree(input, errors);
+
+	assert.equal(errors.length, 0);
+	let checkParent = (node: Node) => {
+		if (node.children) {
+			for (let child of node.children) {
+				assert.equal(node, child.parent);
+				delete child.parent; // delete to avoid recursion in deep equal
+				checkParent(child);
+			}
+		}
+	}
+	checkParent(actual);
+
+	assert.deepEqual(actual, expected);
+}
+
 
 function assertLocation(input:string, expectedSegments: Segment[], expectedNodeType: string, expectedCompleteProperty: boolean) : void {
 	var errors : {error: ParseErrorCode}[] = [];
@@ -237,5 +257,51 @@ suite('JSON', () => {
 		assertLocation('["foo", null,| ]', [2], void 0, false);
 		assertLocation('["foo", null,,| ]', [3], void 0, false);
 		assertLocation('[["foo", null,, ],|', [1], void 0, false);
+	});
+
+	test('tree: literals', () => {
+		assertTree('true', { type: 'boolean', offset: 0, length: 4, value: true });
+		assertTree('false', { type: 'boolean', offset: 0, length: 5, value: false });
+		assertTree('null', { type: 'null', offset: 0, length: 4, value: null });
+		assertTree('23', { type: 'number', offset: 0, length: 2, value: 23 });
+		assertTree('-1.93e-19', { type: 'number', offset: 0, length: 9, value: -1.93e-19 });
+		assertTree('"hello"', { type: 'string', offset: 0, length: 7, value: 'hello' });
+	});
+
+	test('tree: arrays', () => {
+		assertTree('[]', { type: 'array', offset: 0, length: 2, children: [] });
+		assertTree('[ 1 ]', { type: 'array', offset: 0, length: 5, children: [{ type: 'number', offset: 2, length: 1, value: 1 }] });
+		assertTree('[ 1,"x"]', { type: 'array', offset: 0, length: 8, children: [
+			{ type: 'number', offset: 2, length: 1, value: 1 },
+			{ type: 'string', offset: 4, length: 3, value: 'x' }
+		]});
+		assertTree('[[]]', { type: 'array', offset: 0, length: 4, children: [
+			{ type: 'array', offset: 1, length: 2, children: []}
+		]});
+	});
+
+	test('tree: objects', () => {
+		assertTree('{ }', { type: 'object', offset: 0, length: 3, children: [] });
+		assertTree('{ "val": 1 }', { type: 'object', offset: 0, length: 12, children: [
+			{ type: 'property', offset: 2, length: 8, columnOffset: 7, children: [
+				{ type: 'string', offset: 2, length: 5, value: 'val' },
+				{ type: 'number', offset: 9, length: 1, value: 1 }
+			]}
+		]});
+		assertTree('{"id": "$", "v": [ null, null] }',
+			{ type: 'object', offset: 0, length: 32, children: [
+				{ type: 'property', offset: 1, length: 9, columnOffset: 5, children: [
+					{ type: 'string', offset: 1, length: 4, value: 'id' },
+					{ type: 'string', offset: 7, length: 3, value: '$' }
+				]},
+				{ type: 'property', offset: 12, length: 19, columnOffset: 15, children: [
+					{ type: 'string', offset: 12, length: 3, value: 'v' },
+					{ type: 'array', offset: 17, length: 13, children: [
+						{ type: 'null', offset: 19, length: 4, value: null },
+						{ type: 'null', offset: 25, length: 4, value: null }
+					]}
+				]}
+			]}
+		);
 	});
 });
