@@ -52,27 +52,27 @@ export interface JSONScanner {
 	scan(): SyntaxKind;
 	/**
 	 * Returns the current scan position, which is after the last read token.
-	 */	
+	 */
 	getPosition(): number;
 	/**
 	 * Returns the last read token.
-	 */	
+	 */
 	getToken(): SyntaxKind;
 	/**
 	 * Returns the last read token value. The value for strings is the decoded string content. For numbers its of type number, for boolean it's true or false.
-	 */	
+	 */
 	getTokenValue(): string;
 	/**
 	 * The start offset of the last read token.
-	 */	
+	 */
 	getTokenOffset(): number;
 	/**
 	 * The length of the last read token.
-	 */	
+	 */
 	getTokenLength(): number;
 	/**
 	 * An error code of the last scan.
-	 */	
+	 */
 	getTokenError(): ScanError;
 }
 /**
@@ -672,6 +672,7 @@ export interface Node {
 }
 
 export type Segment = string | number;
+export type JSONPath = Segment[];
 
 export interface Location {
 	/**
@@ -682,13 +683,13 @@ export interface Location {
 	 * The path describing the location in the JSON document. The path consists of a sequence strings
 	 * representing an object property or numbers for array indices.
 	 */
-	path: Segment[];
+	path: JSONPath;
 	/**
-	 * Matches the locations path against a pattern consisting of strings (for properties) and numbers (for array indices). 
+	 * Matches the locations path against a pattern consisting of strings (for properties) and numbers (for array indices).
 	 * '*' will match a single segment, of any property name or index.
 	 * '**' will match a sequece of segments or no segment, of any property name or index.
 	 */
-	matches: (patterns: Segment[]) => boolean;
+	matches: (patterns: JSONPath) => boolean;
 	/**
 	 * If set, the location's offset is at a property key.
 	 */
@@ -717,7 +718,7 @@ export function getLocation(text:string, position: number) : Location {
 		previousNodeInst.type = type;
 		previousNodeInst.columnOffset = void 0;
 		previousNode = previousNodeInst;
-	}	
+	}
 	try {
 
 		visit(text, {
@@ -795,7 +796,7 @@ export function getLocation(text:string, position: number) : Location {
 			throw e;
 		}
 	}
-	
+
 	if (segments[segments.length - 1] === '') {
 		segments.pop();
 	}
@@ -928,17 +929,65 @@ export function parseTree(text:string, errors: ParseError[] = [], options?: Pars
 		}
 	};
 	visit(text, visitor, options);
-	
+
 	let result = currentParent.children[0];
-	delete result.parent;
+	if (result) {
+		delete result.parent;
+	}
 	return result;
 }
+
+export function findNodeAtLocation(root: Node, path: JSONPath) : Node {
+	if (!root) {
+		return void 0;
+	}
+	let node = root;
+	for (let segment of path) {
+		if (typeof segment === 'string') {
+			if (node.type !== 'object') {
+				return void 0;
+			}
+			let found = false;
+			for (let propertyNode of node.children) {
+				if (propertyNode.children[0].value === segment) {
+					node = propertyNode.children[1];
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				return void 0;
+			}
+		} else {
+			let index = <number> segment;
+			if (node.type !== 'array' || index < 0 || index >= node.children.length) {
+				return void 0;
+			}
+			node = node.children[index];
+		}
+	}
+	return node;
+}
+
+export function getNodeValue(node: Node) : any {
+	if (node.type === 'array') {
+		return node.children.map(getNodeValue);
+	} else if (node.type === 'object') {
+		let obj = {};
+		for (let prop of node.children) {
+			obj[prop.children[0].value] = getNodeValue(prop.children[1]);
+		}
+		return obj;
+	}
+	return node.value;
+}
+
 
 /**
  * Parses the given text and invokes the visitor functions for each object, array and literal reached.
  */
 export function visit(text:string, visitor: JSONVisitor, options?: ParseOptions) : any {
-	
+
 	let _scanner = createScanner(text, false);
 
 	function toNoArgVisit(visitFunction: (offset: number, length: number) => void) : () => void {
@@ -1128,6 +1177,9 @@ export function visit(text:string, visitor: JSONVisitor, options?: ParseOptions)
 	}
 
 	scanNext();
+	if (_scanner.getToken() === SyntaxKind.EOF) {
+		return true;
+	}
 	if (!parseValue()) {
 		handleError(ParseErrorCode.ValueExpected, [], []);
 		return false;
@@ -1143,22 +1195,22 @@ export interface JSONVisitor {
 	 * Invoked when an open brace is encountered and an object is started. The offset and length represent the location of the open brace.
 	 */
 	onObjectBegin?: (offset:number, length:number) => void;
-	
+
 	/**
 	 * Invoked when a property is encountered. The offset and length represent the location of the property name.
 	 */
 	onObjectProperty?: (property: string, offset:number, length:number) => void;
-	
+
 	/**
 	 * Invoked when a closing brace is encountered and an object is completed. The offset and length represent the location of the closing brace.
 	 */
 	onObjectEnd?: (offset:number, length:number) => void;
-	
+
 	/**
 	 * Invoked when an open bracket is encountered. The offset and length represent the location of the open bracket.
 	 */
 	onArrayBegin?: (offset:number, length:number) => void;
-	
+
 	/**
 	 * Invoked when a closing bracket is encountered. The offset and length represent the location of the closing bracket.
 	 */
