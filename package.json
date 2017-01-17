@@ -1,6 +1,6 @@
 {
   "name": "jsonc-parser",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Scanner and parser for JSON with comments.",
   "main": "./lib/main.js",
   "typings": "./lib/main",
@@ -15,10 +15,12 @@
   },
 	"devDependencies": {
 		"mocha": "^2.4.5",
-		"typescript": "^1.8.9"
+		"typescript": "^2.1.5",
+    "@types/node": "^6.0.46",
+    "@types/mocha": "^2.2.32"
 	},
 	"dependencies": {
-		"vscode-nls": "^1.0.4"
+		"vscode-nls": "^2.0.2"
 	},
 	"scripts": {
 		"prepublish": "tsc -p ./src",
