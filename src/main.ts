@@ -13,7 +13,8 @@ export enum ScanError {
 	UnexpectedEndOfString,
 	UnexpectedEndOfNumber,
 	InvalidUnicode,
-	InvalidEscapeCharacter
+	InvalidEscapeCharacter,
+	InvalidCharacter
 }
 
 export enum SyntaxKind {
@@ -225,10 +226,14 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 				start = pos;
 				continue;
 			}
-			if (isLineBreak(ch)) {
-				result += text.substring(start, pos);
-				scanError = ScanError.UnexpectedEndOfString;
-				break;
+			if (ch >= 0 && ch <= 0x1f) {
+				if (isLineBreak(ch)) {
+					result += text.substring(start, pos);
+					scanError = ScanError.UnexpectedEndOfString;
+					break;
+				} else {
+					scanError = ScanError.InvalidCharacter;
+				}
 			}
 			pos++;
 		}

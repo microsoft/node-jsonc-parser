@@ -7,18 +7,23 @@
 import * as assert from 'assert';
 import {
 	SyntaxKind, createScanner, parse, getLocation, Node, ParseError, parseTree, ParseErrorCode,
-	getParseErrorMessage, ParseOptions, Segment, findNodeAtLocation, getNodeValue
+	getParseErrorMessage, ParseOptions, Segment, findNodeAtLocation, getNodeValue, ScanError
 } from '../main';
 
 function assertKinds(text: string, ...kinds: SyntaxKind[]): void {
-	var _json = createScanner(text);
+	var scanner = createScanner(text);
 	var kind: SyntaxKind;
-	while ((kind = _json.scan()) !== SyntaxKind.EOF) {
+	while ((kind = scanner.scan()) !== SyntaxKind.EOF) {
 		assert.equal(kind, kinds.shift());
 	}
 	assert.equal(kinds.length, 0);
 }
-
+function assertScanError(text: string, expectedKind: SyntaxKind, scanError: ScanError): void {
+	var scanner = createScanner(text);
+	scanner.scan();
+	assert.equal(scanner.getToken(), expectedKind);
+	assert.equal(scanner.getTokenError(), scanError);
+}
 
 function assertValidParse(input: string, expected: any, options?: ParseOptions): void {
 	var errors: { error: ParseErrorCode }[] = [];
@@ -109,10 +114,14 @@ suite('JSON', () => {
 		assertKinds('"\\t"', SyntaxKind.StringLiteral);
 		assertKinds('"\\v"', SyntaxKind.StringLiteral);
 		assertKinds('"\u88ff"', SyntaxKind.StringLiteral);
+		assertKinds('"​\u2028"', SyntaxKind.StringLiteral);
 
 		// unexpected end
 		assertKinds('"test', SyntaxKind.StringLiteral);
 		assertKinds('"test\n"', SyntaxKind.StringLiteral, SyntaxKind.LineBreakTrivia, SyntaxKind.StringLiteral);
+
+		// invalid characters
+		assertScanError('"\t"', SyntaxKind.StringLiteral, ScanError.InvalidCharacter);
 	});
 
 	test('numbers', () => {
