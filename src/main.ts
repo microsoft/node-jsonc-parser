@@ -731,7 +731,7 @@ export function getLocation(text: string, position: number): Location {
 				}
 				previousNode = void 0;
 				isAtPropertyKey = position > offset;
-				segments.push(''); // push a placeholder (will be replaced or removed)
+				segments.push(''); // push a placeholder (will be replaced)
 			},
 			onObjectProperty: (name: string, offset: number, length: number) => {
 				if (position < offset) {
@@ -800,9 +800,6 @@ export function getLocation(text: string, position: number): Location {
 		}
 	}
 
-	if (segments[segments.length - 1] === '') {
-		segments.pop();
-	}
 	return {
 		path: segments,
 		previousNode,

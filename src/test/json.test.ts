@@ -7,7 +7,7 @@
 import * as assert from 'assert';
 import {
 	SyntaxKind, createScanner, parse, getLocation, Node, ParseError, parseTree, ParseErrorCode,
-	getParseErrorMessage, ParseOptions, Segment, findNodeAtLocation, getNodeValue, ScanError
+	getParseErrorMessage, ParseOptions, Segment, findNodeAtLocation, getNodeValue, ScanError, Location
 } from '../main';
 
 function assertKinds(text: string, ...kinds: SyntaxKind[]): void {
@@ -76,6 +76,14 @@ function assertLocation(input: string, expectedSegments: Segment[], expectedNode
 	assert.deepEqual(actual.path, expectedSegments, input);
 	assert.equal(actual.previousNode && actual.previousNode.type, expectedNodeType, input);
 	assert.equal(actual.isAtPropertyKey, expectedCompleteProperty, input);
+}
+
+function assertMatchesLocation(input: string, matchingSegments: Segment[], expectedResult = true): void {
+	var offset = input.indexOf('|');
+	input = input.substring(0, offset) + input.substring(offset + 1, input.length);
+	var actual = getLocation(input, offset);
+	assert(actual);
+	assert.equal(actual.matches(matchingSegments), expectedResult);
 }
 
 suite('JSON', () => {
@@ -237,7 +245,7 @@ suite('JSON', () => {
 	test('parse: disallow commments', () => {
 		let options = { disallowComments: true };
 
-		assertValidParse('[ 1, 2, null, "foo" ]', [1, 2, null, `foo`], options);
+		assertValidParse('[ 1, 2, null, "foo" ]', [1, 2, null, 'foo'], options);
 		assertValidParse('{ "hello": [], "world": {} }', { hello: [], world: {} }, options);
 
 		assertInvalidParse('{ "foo": /*comment*/ true }', { foo: true }, options);
@@ -245,31 +253,31 @@ suite('JSON', () => {
 
 	test('location: properties', () => {
 		assertLocation('|{ "foo": "bar" }', [], void 0, false);
-		assertLocation('{| "foo": "bar" }', [], void 0, true);
-		assertLocation('{ |"foo": "bar" }', [`foo`], `property`, true);
-		assertLocation('{ "foo|": "bar" }', [`foo`], `property`, true);
-		assertLocation('{ "foo"|: "bar" }', [`foo`], `property`, true);
-		assertLocation('{ "foo": "bar"| }', [`foo`], `string`, false);
-		assertLocation('{ "foo":| "bar" }', [`foo`], void 0, false);
-		assertLocation('{ "foo": {"bar|": 1, "car": 2 } }', [`foo`, `bar`], `property`, true);
-		assertLocation('{ "foo": {"bar": 1|, "car": 3 } }', [`foo`, `bar`], `number`, false);
-		assertLocation('{ "foo": {"bar": 1,| "car": 4 } }', [`foo`], void 0, true);
-		assertLocation('{ "foo": {"bar": 1, "ca|r": 5 } }', [`foo`, `car`], `property`, true);
-		assertLocation('{ "foo": {"bar": 1, "car": 6| } }', [`foo`, `car`], `number`, false);
-		assertLocation('{ "foo": {"bar": 1, "car": 7 }| }', [`foo`], void 0, false);
-		assertLocation('{ "foo": {"bar": 1, "car": 8 },| "goo": {} }', [], void 0, true);
-		assertLocation('{ "foo": {"bar": 1, "car": 9 }, "go|o": {} }', [`goo`], `property`, true);
-		assertLocation('{ "dep": {"bar": 1, "car": |', [`dep`, `car`], void 0, false);
-		assertLocation('{ "dep": {"bar": 1,, "car": |', [`dep`, `car`], void 0, false);
-		assertLocation('{ "dep": {"bar": "na", "dar": "ma", "car": | } }', [`dep`, `car`], void 0, false);
+		assertLocation('{| "foo": "bar" }', [''], void 0, true);
+		assertLocation('{ |"foo": "bar" }', ['foo'], 'property', true);
+		assertLocation('{ "foo|": "bar" }', ['foo'], 'property', true);
+		assertLocation('{ "foo"|: "bar" }', ['foo'], 'property', true);
+		assertLocation('{ "foo": "bar"| }', ['foo'], 'string', false);
+		assertLocation('{ "foo":| "bar" }', ['foo'], void 0, false);
+		assertLocation('{ "foo": {"bar|": 1, "car": 2 } }', ['foo', 'bar'], 'property', true);
+		assertLocation('{ "foo": {"bar": 1|, "car": 3 } }', ['foo', 'bar'], 'number', false);
+		assertLocation('{ "foo": {"bar": 1,| "car": 4 } }', ['foo', ''], void 0, true);
+		assertLocation('{ "foo": {"bar": 1, "ca|r": 5 } }', ['foo', 'car'], 'property', true);
+		assertLocation('{ "foo": {"bar": 1, "car": 6| } }', ['foo', 'car'], 'number', false);
+		assertLocation('{ "foo": {"bar": 1, "car": 7 }| }', ['foo'], void 0, false);
+		assertLocation('{ "foo": {"bar": 1, "car": 8 },| "goo": {} }', [''], void 0, true);
+		assertLocation('{ "foo": {"bar": 1, "car": 9 }, "go|o": {} }', ['goo'], 'property', true);
+		assertLocation('{ "dep": {"bar": 1, "car": |', ['dep', 'car'], void 0, false);
+		assertLocation('{ "dep": {"bar": 1,, "car": |', ['dep', 'car'], void 0, false);
+		assertLocation('{ "dep": {"bar": "na", "dar": "ma", "car": | } }', ['dep', 'car'], void 0, false);
 	});
 
 	test('location: arrays', () => {
 		assertLocation('|["foo", null ]', [], void 0, false);
-		assertLocation('[|"foo", null ]', [0], `string`, false);
-		assertLocation('["foo"|, null ]', [0], `string`, false);
+		assertLocation('[|"foo", null ]', [0], 'string', false);
+		assertLocation('["foo"|, null ]', [0], 'string', false);
 		assertLocation('["foo",| null ]', [1], void 0, false);
-		assertLocation('["foo", |null ]', [1], `null`, false);
+		assertLocation('["foo", |null ]', [1], 'null', false);
 		assertLocation('["foo", null,| ]', [2], void 0, false);
 		assertLocation('["foo", null,,| ]', [3], void 0, false);
 		assertLocation('[["foo", null,, ],|', [1], void 0, false);
@@ -360,15 +368,24 @@ suite('JSON', () => {
 
 	test('tree: find location', () => {
 		let root = parseTree('{ "key1": { "key11": [ "val111", "val112" ] }, "key2": [ { "key21": false, "key22": 221 }, null, [{}] ] }');
-		assertNodeAtLocation(root, [`key1`], { key11: ['val111', 'val112'] });
-		assertNodeAtLocation(root, [`key1`, `key11`], ['val111', 'val112']);
-		assertNodeAtLocation(root, [`key1`, `key11`, 0], 'val111');
-		assertNodeAtLocation(root, [`key1`, `key11`, 1], 'val112');
-		assertNodeAtLocation(root, [`key1`, `key11`, 2], void 0);
-		assertNodeAtLocation(root, [`key2`, 0, `key21`], false);
-		assertNodeAtLocation(root, [`key2`, 0, `key22`], 221);
-		assertNodeAtLocation(root, [`key2`, 1], null);
-		assertNodeAtLocation(root, [`key2`, 2], [{}]);
-		assertNodeAtLocation(root, [`key2`, 2, 0], {});
+		assertNodeAtLocation(root, ['key1'], { key11: ['val111', 'val112'] });
+		assertNodeAtLocation(root, ['key1', 'key11'], ['val111', 'val112']);
+		assertNodeAtLocation(root, ['key1', 'key11', 0], 'val111');
+		assertNodeAtLocation(root, ['key1', 'key11', 1], 'val112');
+		assertNodeAtLocation(root, ['key1', 'key11', 2], void 0);
+		assertNodeAtLocation(root, ['key2', 0, 'key21'], false);
+		assertNodeAtLocation(root, ['key2', 0, 'key22'], 221);
+		assertNodeAtLocation(root, ['key2', 1], null);
+		assertNodeAtLocation(root, ['key2', 2], [{}]);
+		assertNodeAtLocation(root, ['key2', 2, 0], {});
+	});
+
+	test('location: matches', () => {
+		assertMatchesLocation('{ "dependencies": { | } }', ['dependencies']);
+		assertMatchesLocation('{ "dependencies": { "fo| } }', ['dependencies']);
+		assertMatchesLocation('{ "dependencies": { "fo|" } }', ['dependencies']);
+		assertMatchesLocation('{ "dependencies": { "fo|": 1 } }', ['dependencies']);
+		assertMatchesLocation('{ "dependencies": { "fo|": 1 } }', ['dependencies']);
+		assertMatchesLocation('{ "dependencies": { "fo": | } }', ['dependencies', '*']);
 	});
 });
