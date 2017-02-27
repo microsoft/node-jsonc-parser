@@ -10,7 +10,8 @@ Why?
 JSONC is JSON with JavaScript style comments. This node module provides a scanner and fault tolerant parser that can process JSONC but is also useful for standard JSON.
  - the *scanner* tokenizes the input string into tokens and token offsets
  - the *parse* function evaluates the JavaScipt object represented by JSON string in a fault tolerant fashion.
- - the *visit* function implements a 'SAX' style parser with callbacks for the encountered properties and values
+ - the *visit* function implements a 'SAX' style parser with callbacks for the encountered properties and values.
+ - the *getLocation* API returns a path that describes the location of a given offset in a given file.
 
 Installation
 ------------
