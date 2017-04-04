@@ -130,6 +130,7 @@ suite('JSON', () => {
 
 		// invalid characters
 		assertScanError('"\t"', SyntaxKind.StringLiteral, ScanError.InvalidCharacter);
+		assertScanError('"\t "', SyntaxKind.StringLiteral, ScanError.InvalidCharacter);
 	});
 
 	test('numbers', () => {

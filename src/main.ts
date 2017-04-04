@@ -233,6 +233,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 					break;
 				} else {
 					scanError = ScanError.InvalidCharacter;
+					break;
 				}
 			}
 			pos++;
