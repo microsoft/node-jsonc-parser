@@ -821,6 +821,7 @@ export function getLocation(text: string, position: number): Location {
 
 export interface ParseOptions {
 	disallowComments?: boolean;
+	allowTrailingComma?: boolean;
 }
 
 /**
@@ -1009,6 +1010,7 @@ export function visit(text: string, visitor: JSONVisitor, options?: ParseOptions
 		onError = toOneArgVisit(visitor.onError);
 
 	let disallowComments = options && options.disallowComments;
+	let allowTrailingComma = options && options.allowTrailingComma;
 	function scanNext(): SyntaxKind {
 		while (true) {
 			let token = _scanner.scan();
@@ -1120,6 +1122,9 @@ export function visit(text: string, visitor: JSONVisitor, options?: ParseOptions
 				}
 				onSeparator(',');
 				scanNext(); // consume comma
+				if (_scanner.getToken() === SyntaxKind.CloseBraceToken && allowTrailingComma) {
+					break;
+				}
 			} else if (needsComma) {
 				handleError(ParseErrorCode.CommaExpected, [], []);
 			}
