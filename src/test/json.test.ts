@@ -18,11 +18,16 @@ function assertKinds(text: string, ...kinds: SyntaxKind[]): void {
 	}
 	assert.equal(kinds.length, 0);
 }
-function assertScanError(text: string, expectedKind: SyntaxKind, scanError: ScanError): void {
+function assertScanError(text: string, scanError: ScanError, ...kinds: SyntaxKind[]): void {
 	var scanner = createScanner(text);
 	scanner.scan();
-	assert.equal(scanner.getToken(), expectedKind);
+	assert.equal(scanner.getToken(), kinds.shift());
 	assert.equal(scanner.getTokenError(), scanError);
+	var kind: SyntaxKind;
+	while ((kind = scanner.scan()) !== SyntaxKind.EOF) {
+		assert.equal(kind, kinds.shift());
+	}
+	assert.equal(kinds.length, 0);
 }
 
 function assertValidParse(input: string, expected: any, options?: ParseOptions): void {
@@ -129,8 +134,9 @@ suite('JSON', () => {
 		assertKinds('"test\n"', SyntaxKind.StringLiteral, SyntaxKind.LineBreakTrivia, SyntaxKind.StringLiteral);
 
 		// invalid characters
-		assertScanError('"\t"', SyntaxKind.StringLiteral, ScanError.InvalidCharacter);
-		assertScanError('"\t "', SyntaxKind.StringLiteral, ScanError.InvalidCharacter);
+		assertScanError('"\t"', ScanError.InvalidCharacter, SyntaxKind.StringLiteral);
+		assertScanError('"\t "', ScanError.InvalidCharacter, SyntaxKind.StringLiteral);
+		assertScanError('"\0 "', ScanError.InvalidCharacter, SyntaxKind.StringLiteral);
 	});
 
 	test('numbers', () => {
