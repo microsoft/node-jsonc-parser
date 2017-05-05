@@ -624,6 +624,8 @@ export function stripComments(text: string, replaceCh?: string): string {
 
 export interface ParseError {
 	error: ParseErrorCode;
+	offset: number;
+	length: number;
 }
 
 export enum ParseErrorCode {
@@ -866,8 +868,8 @@ export function parse(text: string, errors: ParseError[] = [], options?: ParseOp
 			currentParent = previousParents.pop();
 		},
 		onLiteralValue: onValue,
-		onError: (error: ParseErrorCode) => {
-			errors.push({ error: error });
+		onError: (error: ParseErrorCode, offset: number, length: number) => {
+			errors.push({ error, offset, length });
 		}
 	};
 	visit(text, visitor, options);
@@ -927,8 +929,8 @@ export function parseTree(text: string, errors: ParseError[] = [], options?: Par
 				}
 			}
 		},
-		onError: (error: ParseErrorCode) => {
-			errors.push({ error: error });
+		onError: (error: ParseErrorCode, offset: number, length: number) => {
+			errors.push({ error, offset, length });
 		}
 	};
 	visit(text, visitor, options);

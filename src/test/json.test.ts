@@ -15,6 +15,7 @@ function assertKinds(text: string, ...kinds: SyntaxKind[]): void {
 	var kind: SyntaxKind;
 	while ((kind = scanner.scan()) !== SyntaxKind.EOF) {
 		assert.equal(kind, kinds.shift());
+		assert.equal(scanner.getTokenError(), ScanError.None, text);
 	}
 	assert.equal(kinds.length, 0);
 }
@@ -31,7 +32,7 @@ function assertScanError(text: string, scanError: ScanError, ...kinds: SyntaxKin
 }
 
 function assertValidParse(input: string, expected: any, options?: ParseOptions): void {
-	var errors: { error: ParseErrorCode }[] = [];
+	var errors: ParseError[] = [];
 	var actual = parse(input, errors, options);
 
 	if (errors.length !== 0) {
@@ -41,18 +42,18 @@ function assertValidParse(input: string, expected: any, options?: ParseOptions):
 }
 
 function assertInvalidParse(input: string, expected: any, options?: ParseOptions): void {
-	var errors: { error: ParseErrorCode }[] = [];
+	var errors: ParseError[] = [];
 	var actual = parse(input, errors, options);
 
 	assert(errors.length > 0);
 	assert.deepEqual(actual, expected);
 }
 
-function assertTree(input: string, expected: any, expectedErrors: number[] = []): void {
+function assertTree(input: string, expected: any, expectedErrors: ParseError[] = []): void {
 	var errors: ParseError[] = [];
 	var actual = parseTree(input, errors);
 
-	assert.deepEqual(errors.map(e => e.error, expected), expectedErrors);
+	assert.deepEqual(errors, expectedErrors);
 	let checkParent = (node: Node) => {
 		if (node.children) {
 			for (let child of node.children) {
@@ -109,8 +110,8 @@ suite('JSON', () => {
 		assertKinds('/* this is a \ncomment*/', SyntaxKind.BlockCommentTrivia);
 
 		// unexpected end
-		assertKinds('/* this is a', SyntaxKind.BlockCommentTrivia);
-		assertKinds('/* this is a \ncomment', SyntaxKind.BlockCommentTrivia);
+		assertScanError('/* this is a', ScanError.UnexpectedEndOfComment, SyntaxKind.BlockCommentTrivia);
+		assertScanError('/* this is a \ncomment', ScanError.UnexpectedEndOfComment, SyntaxKind.BlockCommentTrivia);
 
 		// broken comment
 		assertKinds('/ ttt', SyntaxKind.Unknown, SyntaxKind.Trivia, SyntaxKind.Unknown);
@@ -125,13 +126,13 @@ suite('JSON', () => {
 		assertKinds('"\\n"', SyntaxKind.StringLiteral);
 		assertKinds('"\\r"', SyntaxKind.StringLiteral);
 		assertKinds('"\\t"', SyntaxKind.StringLiteral);
-		assertKinds('"\\v"', SyntaxKind.StringLiteral);
 		assertKinds('"\u88ff"', SyntaxKind.StringLiteral);
 		assertKinds('"​\u2028"', SyntaxKind.StringLiteral);
+		assertScanError('"\\v"', ScanError.InvalidEscapeCharacter, SyntaxKind.StringLiteral);
 
 		// unexpected end
-		assertKinds('"test', SyntaxKind.StringLiteral);
-		assertKinds('"test\n"', SyntaxKind.StringLiteral, SyntaxKind.LineBreakTrivia, SyntaxKind.StringLiteral);
+		assertScanError('"test', ScanError.UnexpectedEndOfString, SyntaxKind.StringLiteral);
+		assertScanError('"test\n"', ScanError.UnexpectedEndOfString, SyntaxKind.StringLiteral, SyntaxKind.LineBreakTrivia, SyntaxKind.StringLiteral);
 
 		// invalid characters
 		assertScanError('"\t"', ScanError.InvalidCharacter, SyntaxKind.StringLiteral);
@@ -379,8 +380,10 @@ suite('JSON', () => {
 						]
 					}
 				]
-			}
-			, [ParseErrorCode.PropertyNameExpected, ParseErrorCode.ValueExpected]);
+			},[
+				{ error: ParseErrorCode.PropertyNameExpected, offset: 26, length: 1 },
+				{ error: ParseErrorCode.ValueExpected, offset: 26, length: 1 }
+			]);
 	});
 
 	test('tree: find location', () => {
