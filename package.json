@@ -19,9 +19,6 @@
     "@types/node": "^6.0.46",
     "@types/mocha": "^2.2.32"
   },
-  "dependencies": {
-    "vscode-nls": "^2.0.2"
-  },
   "scripts": {
     "prepublish": "tsc -p ./src",
     "compile": "tsc -p ./src",

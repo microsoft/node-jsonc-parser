@@ -7,7 +7,7 @@
 import * as assert from 'assert';
 import {
 	SyntaxKind, createScanner, parse, getLocation, Node, ParseError, parseTree, ParseErrorCode,
-	getParseErrorMessage, ParseOptions, Segment, findNodeAtLocation, getNodeValue, ScanError, Location
+	ParseOptions, Segment, findNodeAtLocation, getNodeValue, ScanError, Location
 } from '../main';
 
 function assertKinds(text: string, ...kinds: SyntaxKind[]): void {
@@ -36,7 +36,7 @@ function assertValidParse(input: string, expected: any, options?: ParseOptions):
 	var actual = parse(input, errors, options);
 
 	if (errors.length !== 0) {
-		assert(false, getParseErrorMessage(errors[0].error));
+		assert.notEqual("undefined", typeof errors[0].error);
 	}
 	assert.deepEqual(actual, expected);
 }
