@@ -17,7 +17,8 @@
     "mocha": "^2.4.5",
     "typescript": "^2.7.1",
     "@types/node": "^7.0.43",
-    "@types/mocha": "^2.2.32"
+    "@types/mocha": "^2.2.32",
+    "tslint": "^5.9.1"
   },
   "scripts": {
     "prepare": "tsc -p ./src",
