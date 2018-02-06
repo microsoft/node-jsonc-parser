@@ -17,7 +17,8 @@
 			"runtimeArgs": [],
 			"env": {},
 			"sourceMaps": true,
-			"outDir": "${workspaceRoot}/lib"
+			"outFiles": ["${workspaceRoot}/lib/**/*.js"],
+			"preLaunchTask": "npm: watch"
 		}
 	]
 }

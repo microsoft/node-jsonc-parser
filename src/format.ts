@@ -6,61 +6,32 @@
 
 import * as Json from './main';
 
-export interface FormattingOptions {
-	/**
-	 * If indentation is based on spaces (`insertSpaces` = true), then what is the number of spaces that make an indent?
-	 */
-	tabSize: number;
-	/**
-	 * Is indentation based on spaces?
-	 */
-	insertSpaces: boolean;
-	/**
-	 * The default end of line line character
-	 */
-	eol: string;
-}
-
-export interface Edit {
-	offset: number;
-	length: number;
-	content: string;
-}
-
-export function applyEdit(text: string, edit: Edit): string {
-	return text.substring(0, edit.offset) + edit.content + text.substring(edit.offset + edit.length);
-}
-
-export function applyEdits(text: string, edits: Edit[]): string {
-	for (let i = edits.length - 1; i >= 0; i--) {
-		text = applyEdit(text, edits[i]);
-	}
-	return text;
-}
-
-export function format(documentText: string, range: { offset: number, length: number }, options: FormattingOptions): Edit[] {
+export function format(documentText: string, range: Json.Range | undefined, options: Json.FormattingOptions): Json.Edit[] {
 	let initialIndentLevel: number;
-	let value: string;
+	let formatText: string;
+	let formatTextStart: number;
 	let rangeStart: number;
 	let rangeEnd: number;
 	if (range) {
 		rangeStart = range.offset;
 		rangeEnd = rangeStart + range.length;
-		while (rangeStart > 0 && !isEOL(documentText, rangeStart - 1)) {
-			rangeStart--;
-		}
-		let scanner = Json.createScanner(documentText, true);
-		scanner.setPosition(rangeEnd);
-		scanner.scan();
-		rangeEnd = scanner.getPosition();
 
-		value = documentText.substring(rangeStart, rangeEnd);
-		initialIndentLevel = computeIndentLevel(value, 0, options);
+		formatTextStart = rangeStart;
+		while (formatTextStart > 0 && !isEOL(documentText, formatTextStart - 1)) {
+			formatTextStart--;
+		}
+		let endOffset = rangeEnd;
+		while (endOffset < documentText.length && !isEOL(documentText, endOffset)) {
+			endOffset++;
+		}
+		formatText = documentText.substring(formatTextStart, endOffset);
+		initialIndentLevel = computeIndentLevel(formatText, 0, options);
 	} else {
-		value = documentText;
+		formatText = documentText;
+		initialIndentLevel = 0;
+		formatTextStart = 0;
 		rangeStart = 0;
 		rangeEnd = documentText.length;
-		initialIndentLevel = 0;
 	}
 	let eol = getEOL(options, documentText);
 
@@ -73,7 +44,8 @@ export function format(documentText: string, range: { offset: number, length: nu
 		indentValue = '\t';
 	}
 
-	let scanner = Json.createScanner(value, false);
+	let scanner = Json.createScanner(formatText, false);
+	let hasError = false;
 
 	function newLineAndIndent(): string {
 		return eol + repeat(indentValue, initialIndentLevel + indentLevel);
@@ -85,32 +57,34 @@ export function format(documentText: string, range: { offset: number, length: nu
 			lineBreak = lineBreak || (token === Json.SyntaxKind.LineBreakTrivia);
 			token = scanner.scan();
 		}
+		hasError = token === Json.SyntaxKind.Unknown || scanner.getTokenError() !== Json.ScanError.None;
 		return token;
 	}
-	let editOperations: Edit[] = [];
+	let editOperations: Json.Edit[] = [];
 	function addEdit(text: string, startOffset: number, endOffset: number) {
-		if (documentText.substring(startOffset, endOffset) !== text) {
+		if (!hasError && startOffset < rangeEnd && endOffset > rangeStart && documentText.substring(startOffset, endOffset) !== text) {
 			editOperations.push({ offset: startOffset, length: endOffset - startOffset, content: text });
 		}
 	}
 
 	let firstToken = scanNext();
+
 	if (firstToken !== Json.SyntaxKind.EOF) {
-		let firstTokenStart = scanner.getTokenOffset() + rangeStart;
+		let firstTokenStart = scanner.getTokenOffset() + formatTextStart;
 		let initialIndent = repeat(indentValue, initialIndentLevel);
-		addEdit(initialIndent, rangeStart, firstTokenStart);
+		addEdit(initialIndent, formatTextStart, firstTokenStart);
 	}
 
 	while (firstToken !== Json.SyntaxKind.EOF) {
-		let firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + rangeStart;
+		let firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
 		let secondToken = scanNext();
 
 		let replaceContent = '';
 		while (!lineBreak && (secondToken === Json.SyntaxKind.LineCommentTrivia || secondToken === Json.SyntaxKind.BlockCommentTrivia)) {
 			// comments on the same line: keep them on the same line, but ignore them otherwise
-			let commentTokenStart = scanner.getTokenOffset() + rangeStart;
+			let commentTokenStart = scanner.getTokenOffset() + formatTextStart;
 			addEdit(' ', firstTokenEnd, commentTokenStart);
-			firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + rangeStart;
+			firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
 			replaceContent = secondToken === Json.SyntaxKind.LineCommentTrivia ? newLineAndIndent() : '';
 			secondToken = scanNext();
 		}
@@ -125,7 +99,7 @@ export function format(documentText: string, range: { offset: number, length: nu
 				indentLevel--;
 				replaceContent = newLineAndIndent();
 			}
-		} else if (secondToken !== Json.SyntaxKind.EOF) {
+		} else {
 			switch (firstToken) {
 				case Json.SyntaxKind.OpenBracketToken:
 				case Json.SyntaxKind.OpenBraceToken:
@@ -147,13 +121,26 @@ export function format(documentText: string, range: { offset: number, length: nu
 				case Json.SyntaxKind.ColonToken:
 					replaceContent = ' ';
 					break;
+				case Json.SyntaxKind.StringLiteral:
+					if (secondToken === Json.SyntaxKind.ColonToken) {
+						replaceContent = '';
+						break;
+					}
+					// fall through
 				case Json.SyntaxKind.NullKeyword:
 				case Json.SyntaxKind.TrueKeyword:
 				case Json.SyntaxKind.FalseKeyword:
 				case Json.SyntaxKind.NumericLiteral:
-					if (secondToken === Json.SyntaxKind.NullKeyword || secondToken === Json.SyntaxKind.FalseKeyword || secondToken === Json.SyntaxKind.NumericLiteral) {
+				case Json.SyntaxKind.CloseBraceToken:
+				case Json.SyntaxKind.CloseBracketToken:
+					if (secondToken === Json.SyntaxKind.LineCommentTrivia || secondToken === Json.SyntaxKind.BlockCommentTrivia) {
 						replaceContent = ' ';
+					} else if (secondToken !== Json.SyntaxKind.CommaToken && secondToken !== Json.SyntaxKind.EOF) {
+						hasError = true;
 					}
+					break;
+				case Json.SyntaxKind.Unknown:
+					hasError = true;
 					break;
 			}
 			if (lineBreak && (secondToken === Json.SyntaxKind.LineCommentTrivia || secondToken === Json.SyntaxKind.BlockCommentTrivia)) {
@@ -161,7 +148,7 @@ export function format(documentText: string, range: { offset: number, length: nu
 			}
 
 		}
-		let secondTokenStart = scanner.getTokenOffset() + rangeStart;
+		let secondTokenStart = scanner.getTokenOffset() + formatTextStart;
 		addEdit(replaceContent, firstTokenEnd, secondTokenStart);
 		firstToken = secondToken;
 	}
@@ -176,7 +163,7 @@ function repeat(s: string, count: number): string {
 	return result;
 }
 
-function computeIndentLevel(content: string, offset: number, options: FormattingOptions): number {
+function computeIndentLevel(content: string, offset: number, options: Json.FormattingOptions): number {
 	let i = 0;
 	let nChars = 0;
 	let tabSize = options.tabSize || 4;
@@ -194,7 +181,7 @@ function computeIndentLevel(content: string, offset: number, options: Formatting
 	return Math.floor(nChars / tabSize);
 }
 
-function getEOL(options: FormattingOptions, text: string): string {
+function getEOL(options: Json.FormattingOptions, text: string): string {
 	for (let i = 0; i < text.length; i++) {
 		let ch = text.charAt(i);
 		if (ch === '\r') {
@@ -209,6 +196,6 @@ function getEOL(options: FormattingOptions, text: string): string {
 	return (options && options.eol) || '\n';
 }
 
-function isEOL(text: string, offset: number) {
+export function isEOL(text: string, offset: number) {
 	return '\r\n'.indexOf(text.charAt(offset)) !== -1;
 }

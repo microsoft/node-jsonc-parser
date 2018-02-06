@@ -1,4 +1,10 @@
 
+1.0.1
+==================
+ - added the *format* API: computes edits to format a JSON document.
+ - added the *modify* API: computes edits to insert, remove or replace a property or value in a JSON document.
+ - added the *allyEdits* API: applies edits to a document
+
 1.0.0
 ==================
  * remove nls dependency (remove getParseErrorMessage)

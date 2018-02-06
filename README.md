@@ -9,9 +9,14 @@ Why?
 ----
 JSONC is JSON with JavaScript style comments. This node module provides a scanner and fault tolerant parser that can process JSONC but is also useful for standard JSON.
  - the *scanner* tokenizes the input string into tokens and token offsets
- - the *parse* function evaluates the JavaScipt object represented by JSON string in a fault tolerant fashion.
  - the *visit* function implements a 'SAX' style parser with callbacks for the encountered properties and values.
- - the *getLocation* API returns a path that describes the location of a given offset in a given file.
+ - the *parseTree* function computes a hierarchical DOM with offsets representing the encountered properties and values.
+ - the *parse* function evaluates the JavaScipt object represented by JSON string in a fault tolerant fashion. 
+ - the *getLocation* API returns a location object that describes the property or value located at a given offset in a JSON document.
+ - ths *findNodeAtLocation* API finds the node at a given location path in a JSON DOM.
+ - the *format* API computes edits to format a JSON document.
+ - the *modify* API computes edits to insert, remove or replace a property or value in a JSON document.
+ - the *applyEdits* API applies edits to a document.
 
 Installation
 ------------
@@ -177,7 +182,99 @@ export interface Location {
     isAtPropertyKey: boolean;
 }
 
+/**
+ * Finds the node at the given path in a JSON DOM.
+ */
+export function findNodeAtLocation(root: Node, path: JSONPath): Node | undefined;
 
+/**
+ * Evaluates the JavaScript object of the given JSON DOM node 
+ */
+export function getNodeValue(node: Node): any;
+
+/**
+ * Computes the edits needed to format a JSON document. 
+ * 
+ * @param documentText The input text 
+ * @param range The range to format or `undefined` to format the full content
+ * @param options The formatting options
+ * @returns A list of edit operations describing the formatting changes to the original document. Edits can be either inserts, replacements or
+ * removals of text segments. All offsets refer to the original state of the document. No two edits must change or remove the same range of
+ * text in the original document. However, multiple edits can have
+ * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
+ * To apply edits to an input, you can use `applyEdits`
+ */
+export function format(documentText: string, range: Range, options: FormattingOptions): Edit[];
+
+
+/**
+ * Computes the edits needed to modify a value in the JSON document.
+ * 
+ * @param documentText The input text 
+ * @param path The path of the value to change. The path represents either to the document root, a property or an array item.
+ * If the path points to an non-existing property or item, it will be created. 
+ * @param value The new value for the specified property or item. If the value is undefined,
+ * the property or item will be removed.
+ * @param options Options
+ * @returns A list of edit operations describing the formatting changes to the original document. Edits can be either inserts, replacements or
+ * removals of text segments. All offsets refer to the original state of the document. No two edits must change or remove the same range of
+ * text in the original document. However, multiple edits can have
+ * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
+ * To apply edits to an input, you can use `applyEdits`
+ */
+export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): Edit[];
+
+/**
+ * Applies edits to a input string.
+ */
+export function applyEdits(text: string, edits: Edit[]): string;
+
+/**
+ * Represents a text modification
+ */
+export interface Edit {
+	/**
+	 * The start offset of the modification.
+	 */
+	offset: number;
+	/**
+	 * The length of the modification. Must not be negative. Empty length represents an *insert*.
+	 */
+	length: number;
+	/**
+	 * The new content. Empty content represents a *remove*.
+	 */
+	content: string;
+}
+
+/**
+ * A text range in the document
+*/
+export interface Range {
+	/**
+	 * The start offset of the range. 
+	 */
+	offset: number;
+	/**
+	 * The length of the range. Must not be negative.  
+	 */
+	length: number;
+}
+
+export interface FormattingOptions {
+	/**
+	 * If indentation is based on spaces (`insertSpaces` = true), then what is the number of spaces that make an indent?
+	 */
+	tabSize: number;
+	/**
+	 * Is indentation based on spaces?
+	 */
+	insertSpaces: boolean;
+	/**
+	 * The default 'end of line' character
+	 */
+	eol: string;
+}
 
 ```
 
@@ -187,4 +284,4 @@ License
 
 (MIT License)
 
-Copyright 2016, Microsoft
+Copyright 2018, Microsoft

@@ -1,14 +1,16 @@
-{ 
- 	"compilerOptions": { 
- 		"target": "ES5", 
- 		"module": "umd", 
- 		"moduleResolution": "node", 
- 		"sourceMap": true, 
- 		"declaration": true, 
- 		"stripInternal": true, 
- 		"outDir": "../lib",
+{
+	"compilerOptions": {
+		"target": "ES5",
+		"module": "umd",
+		"moduleResolution": "node",
+		"sourceMap": true,
+		"declaration": true,
+		"stripInternal": true,
+		"outDir": "../lib",
+		"strict": true,
 		"lib": [
-			"es5", "es2015.promise"
+			"es5",
+			"es2015.promise"
 		]
-	 }
-} 
+	}
+}

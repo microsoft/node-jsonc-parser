@@ -74,7 +74,7 @@ function assertNodeAtLocation(input: Node, segments: Segment[], expected: any) {
 }
 
 
-function assertLocation(input: string, expectedSegments: Segment[], expectedNodeType: string, expectedCompleteProperty: boolean): void {
+function assertLocation(input: string, expectedSegments: Segment[], expectedNodeType: string | undefined, expectedCompleteProperty: boolean): void {
 	var offset = input.indexOf('|');
 	input = input.substring(0, offset) + input.substring(offset + 1, input.length);
 	var actual = getLocation(input, offset);
@@ -380,7 +380,7 @@ suite('JSON', () => {
 						]
 					}
 				]
-			},[
+			}, [
 				{ error: ParseErrorCode.PropertyNameExpected, offset: 26, length: 1 },
 				{ error: ParseErrorCode.ValueExpected, offset: 26, length: 1 }
 			]);

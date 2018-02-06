@@ -6,11 +6,12 @@
 
 import * as assert from 'assert';
 import * as Formatter from '../format';
+import { Range } from '../main';
 
 suite('JSON - formatter', () => {
 
 	function format(content: string, expected: string, insertSpaces = true) {
-		let range = void 0;
+		let range: Range | undefined = void 0;
 		var rangeStart = content.indexOf('|');
 		var rangeEnd = content.lastIndexOf('|');
 		if (rangeStart !== -1 && rangeEnd !== -1) {
@@ -351,7 +352,7 @@ suite('JSON - formatter', () => {
 
 		var expected = [
 			'{ "a": {},',
-			'  "b": [',
+			'   "b": [',
 			'    null',
 			'  ],',
 			'  "c": {}',

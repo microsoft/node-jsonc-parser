@@ -5,7 +5,7 @@
 'use strict';
 
 import * as assert from 'assert';
-import { FormattingOptions, Edit } from '../format';
+import { FormattingOptions, Edit } from '../main';
 import { setProperty, removeProperty } from '../edit';
 
 suite('JSON - edits', () => {
@@ -42,6 +42,7 @@ suite('JSON - edits', () => {
 		content = '{\n  "x": "y"\n}';
 		edits = setProperty(content, ['x'], { key: true }, formatterOptions);
 		assertEdit(content, edits, '{\n  "x": {\n    "key": true\n  }\n}');
+
 		content = '{\n  "a": "b",  "x": "y"\n}';
 		edits = setProperty(content, ['a'], null, formatterOptions);
 		assertEdit(content, edits, '{\n  "a": null,  "x": "y"\n}');
@@ -103,13 +104,13 @@ suite('JSON - edits', () => {
 
 		content = '//comment';
 		edits = setProperty(content, ['foo', 0], 'bar', formatterOptions);
-		assertEdit(content, edits, '{\n  "foo": [\n    "bar"\n  ]\n} //comment\n');
+		assertEdit(content, edits, '{\n  "foo": [\n    "bar"\n  ]\n} //comment');
 	});
 
 	test('remove property', () => {
 		let content = '{\n  "x": "y"\n}';
 		let edits = removeProperty(content, ['x'], formatterOptions);
-		assertEdit(content, edits, '{}');
+		assertEdit(content, edits, '{\n}');
 
 		content = '{\n  "x": "y", "a": []\n}';
 		edits = removeProperty(content, ['x'], formatterOptions);

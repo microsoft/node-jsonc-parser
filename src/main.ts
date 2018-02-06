@@ -4,6 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
+import { format as _format } from './format';
+import { setProperty, applyEdit } from './edit';
+
 export enum ScanError {
 	None,
 	UnexpectedEndOfComment,
@@ -688,14 +691,14 @@ export interface Location {
  * For a given offset, evaluate the location in the JSON document. Each segment in the location path is either a property name or an array index.
  */
 export function getLocation(text: string, position: number): Location {
-	let segments: any[] = []; // strings or numbers
+	let segments: Segment[] = []; // strings or numbers
 	let earlyReturnException = new Object();
-	let previousNode: Node = void 0;
+	let previousNode: Node | undefined = void 0;
 	const previousNodeInst: Node = {
-		value: void 0,
-		offset: void 0,
-		length: void 0,
-		type: void 0
+		value: {},
+		offset: 0,
+		length: 0,
+		type: 'object'
 	};
 	let isAtPropertyKey = false;
 	function setPreviousNode(value: string, offset: number, length: number, type: NodeType) {
@@ -762,7 +765,7 @@ export function getLocation(text: string, position: number): Location {
 				if (position <= offset) {
 					throw earlyReturnException;
 				}
-				if (sep === ':' && previousNode.type === 'property') {
+				if (sep === ':' && previousNode && previousNode.type === 'property') {
 					previousNode.columnOffset = offset;
 					isAtPropertyKey = false;
 					previousNode = void 0;
@@ -788,7 +791,7 @@ export function getLocation(text: string, position: number): Location {
 		path: segments,
 		previousNode,
 		isAtPropertyKey,
-		matches: (pattern: string[]) => {
+		matches: (pattern: Segment[]) => {
 			let k = 0;
 			for (let i = 0; k < pattern.length && i < segments.length; i++) {
 				if (pattern[k] === segments[i] || pattern[k] === '*') {
@@ -812,7 +815,7 @@ export interface ParseOptions {
  * Therefore always check the errors list to find out if the input was valid.
  */
 export function parse(text: string, errors: ParseError[] = [], options?: ParseOptions): any {
-	let currentProperty: string = null;
+	let currentProperty: string | null = null;
 	let currentParent: any = [];
 	let previousParents: any[] = [];
 
@@ -839,7 +842,7 @@ export function parse(text: string, errors: ParseError[] = [], options?: ParseOp
 			currentParent = previousParents.pop();
 		},
 		onArrayBegin: () => {
-			let array = [];
+			let array: any[] = [];
 			onValue(array);
 			previousParents.push(currentParent);
 			currentParent = array;
@@ -867,12 +870,12 @@ export function parseTree(text: string, errors: ParseError[] = [], options?: Par
 	function ensurePropertyComplete(endOffset: number) {
 		if (currentParent.type === 'property') {
 			currentParent.length = endOffset - currentParent.offset;
-			currentParent = currentParent.parent;
+			currentParent = currentParent.parent!;
 		}
 	}
 
 	function onValue(valueNode: Node): Node {
-		currentParent.children.push(valueNode);
+		currentParent.children!.push(valueNode);
 		return valueNode;
 	}
 
@@ -882,11 +885,11 @@ export function parseTree(text: string, errors: ParseError[] = [], options?: Par
 		},
 		onObjectProperty: (name: string, offset: number, length: number) => {
 			currentParent = onValue({ type: 'property', offset, length: -1, parent: currentParent, children: [] });
-			currentParent.children.push({ type: 'string', value: name, offset, length, parent: currentParent });
+			currentParent.children!.push({ type: 'string', value: name, offset, length, parent: currentParent });
 		},
 		onObjectEnd: (offset: number, length: number) => {
 			currentParent.length = offset + length - currentParent.offset;
-			currentParent = currentParent.parent;
+			currentParent = currentParent.parent!;
 			ensurePropertyComplete(offset + length);
 		},
 		onArrayBegin: (offset: number, length: number) => {
@@ -894,7 +897,7 @@ export function parseTree(text: string, errors: ParseError[] = [], options?: Par
 		},
 		onArrayEnd: (offset: number, length: number) => {
 			currentParent.length = offset + length - currentParent.offset;
-			currentParent = currentParent.parent;
+			currentParent = currentParent.parent!;
 			ensurePropertyComplete(offset + length);
 		},
 		onLiteralValue: (value: any, offset: number, length: number) => {
@@ -916,26 +919,29 @@ export function parseTree(text: string, errors: ParseError[] = [], options?: Par
 	};
 	visit(text, visitor, options);
 
-	let result = currentParent.children[0];
+	let result = currentParent.children![0];
 	if (result) {
 		delete result.parent;
 	}
 	return result;
 }
 
-export function findNodeAtLocation(root: Node, path: JSONPath): Node {
+/**
+ * Finds the node at the given path in a JSON DOM.
+ */
+export function findNodeAtLocation(root: Node, path: JSONPath): Node | undefined {
 	if (!root) {
 		return void 0;
 	}
 	let node = root;
 	for (let segment of path) {
 		if (typeof segment === 'string') {
-			if (node.type !== 'object') {
+			if (node.type !== 'object' || !Array.isArray(node.children)) {
 				return void 0;
 			}
 			let found = false;
 			for (let propertyNode of node.children) {
-				if (propertyNode.children[0].value === segment) {
+				if (Array.isArray(propertyNode.children) && propertyNode.children[0].value === segment) {
 					node = propertyNode.children[1];
 					found = true;
 					break;
@@ -946,7 +952,7 @@ export function findNodeAtLocation(root: Node, path: JSONPath): Node {
 			}
 		} else {
 			let index = <number>segment;
-			if (node.type !== 'array' || index < 0 || index >= node.children.length) {
+			if (node.type !== 'array' || index < 0 || !Array.isArray(node.children) || index >= node.children.length) {
 				return void 0;
 			}
 			node = node.children[index];
@@ -955,13 +961,16 @@ export function findNodeAtLocation(root: Node, path: JSONPath): Node {
 	return node;
 }
 
+/**
+ * Evaluates the JavaScript object of the given JSON DOM node 
+ */
 export function getNodeValue(node: Node): any {
 	if (node.type === 'array') {
-		return node.children.map(getNodeValue);
+		return node.children!.map(getNodeValue);
 	} else if (node.type === 'object') {
-		let obj = {};
-		for (let prop of node.children) {
-			obj[prop.children[0].value] = getNodeValue(prop.children[1]);
+		let obj = Object.create(null);
+		for (let prop of node.children!) {
+			obj[prop.children![0].value] = getNodeValue(prop.children![1]);
 		}
 		return obj;
 	}
@@ -976,10 +985,10 @@ export function visit(text: string, visitor: JSONVisitor, options?: ParseOptions
 
 	let _scanner = createScanner(text, false);
 
-	function toNoArgVisit(visitFunction: (offset: number, length: number) => void): () => void {
+	function toNoArgVisit(visitFunction?: (offset: number, length: number) => void): () => void {
 		return visitFunction ? () => visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength()) : () => true;
 	}
-	function toOneArgVisit<T>(visitFunction: (arg: T, offset: number, length: number) => void): (arg: T) => void {
+	function toOneArgVisit<T>(visitFunction?: (arg: T, offset: number, length: number) => void): (arg: T) => void {
 		return visitFunction ? (arg: T) => visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength()) : () => true;
 	}
 
@@ -1221,4 +1230,111 @@ export interface JSONVisitor {
 	 * Invoked on an error.
 	 */
 	onError?: (error: ParseErrorCode, offset: number, length: number) => void;
+}
+
+/**
+ * Represents a text modification
+ */
+export interface Edit {
+	/**
+	 * The start offset of the modification.
+	 */
+	offset: number;
+	/**
+	 * The length of the modification. Must not be negative. Empty length represents an *insert*.
+	 */
+	length: number;
+	/**
+	 * The new content. Empty content represents a *remove*.
+	 */
+	content: string;
+}
+
+/**
+ * A text range in the document
+*/
+export interface Range {
+	/**
+	 * The start offset of the range. 
+	 */
+	offset: number;
+	/**
+	 * The length of the range. Must not be negative.  
+	 */
+	length: number;
+}
+
+export interface FormattingOptions {
+	/**
+	 * If indentation is based on spaces (`insertSpaces` = true), then what is the number of spaces that make an indent?
+	 */
+	tabSize: number;
+	/**
+	 * Is indentation based on spaces?
+	 */
+	insertSpaces: boolean;
+	/**
+	 * The default 'end of line' character
+	 */
+	eol: string;
+}
+
+
+/**
+ * Computes the edits needed to format a JSON document. 
+ * 
+ * @param documentText The input text 
+ * @param range The range to format or `undefined` to format the full content
+ * @param options The formatting options
+ * @returns A list of edit operations describing the formatting changes to the original document. Edits can be either inserts, replacements or
+ * removals of text segments. All offsets refer to the original state of the document. No two edits must change or remove the same range of
+ * text in the original document. However, multiple edits can have
+ * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
+ * To apply edits to an input, you can use `applyEdits`
+ */
+export function format(documentText: string, range: Range, options: FormattingOptions): Edit[] {
+	return _format(documentText, range, options);
+}
+
+/** 
+ * Options used when computing the modification edits
+ */
+export interface ModificationOptions {
+	/**
+	 * Formatting options
+	*/
+	formattingOptions: FormattingOptions;
+	/**
+	 * Optional fucntion to define the insertion index given an existing list of properties.
+	 */
+	getInsertionIndex?: (properties: string[]) => number;
+}
+
+/**
+ * Computes the edits needed to modify a value in the JSON document.
+ * 
+ * @param documentText The input text 
+ * @param path The path of the value to change. The path represents either to the document root, a property or an array item.
+ * If the path points to an non-existing property or item, it will be created. 
+ * @param value The new value for the specified property or item. If the value is undefined,
+ * the property or item will be removed.
+ * @param options Options
+ * @returns A list of edit operations describing the formatting changes to the original document. Edits can be either inserts, replacements or
+ * removals of text segments. All offsets refer to the original state of the document. No two edits must change or remove the same range of
+ * text in the original document. However, multiple edits can have
+ * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
+ * To apply edits to an input, you can use `applyEdits`
+ */
+export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): Edit[] {
+	return setProperty(text, path, value, options.formattingOptions, options.getInsertionIndex);
+}
+
+/**
+ * Applies edits to a input string.
+ */
+export function applyEdits(text: string, edits: Edit[]): string {
+	for (let i = edits.length - 1; i >= 0; i--) {
+		text = applyEdit(text, edits[i]);
+	}
+	return text;
 }
