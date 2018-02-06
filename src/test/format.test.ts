@@ -17,6 +17,7 @@ suite('JSON - formatter', () => {
 		if (rangeStart !== -1 && rangeEnd !== -1) {
 			content = content.substring(0, rangeStart) + content.substring(rangeStart + 1, rangeEnd) + content.substring(rangeEnd + 1);
 			range = { offset: rangeStart, length: rangeEnd - rangeStart };
+			console.log(content.substr(range.offset, range.length) + '<');
 		}
 
 		var edits = Formatter.format(content, range, { tabSize: 2, insertSpaces: insertSpaces, eol: '\n' });
@@ -159,13 +160,27 @@ suite('JSON - formatter', () => {
 
 	test('syntax errors', () => {
 		var content = [
-			'[ null 1.2 ]'
+			'[ null  1.2 "Hello" ]'
 		].join('\n');
 
 		var expected = [
 			'[',
-			'  null 1.2',
+			'  null  1.2 "Hello"',
 			']',
+		].join('\n');
+
+		format(content, expected);
+	});
+
+	test('syntax errors 2', () => {
+		var content = [
+			'{"a":"b""c":"d" }'
+		].join('\n');
+
+		var expected = [
+			'{',
+			'  "a": "b""c": "d"',
+			'}',
 		].join('\n');
 
 		format(content, expected);
@@ -309,6 +324,7 @@ suite('JSON - formatter', () => {
 
 		format(content, expected);
 	});
+
 	test('multiple mixed comments on same line', () => {
 		var content = [
 			'[ /*comment*/  /*comment*/   // comment ',
@@ -347,7 +363,7 @@ suite('JSON - formatter', () => {
 			'{ "a": {},',
 			'   |"b": [null],',
 			'"c": {}',
-			'} |'
+			'}|'
 		].join('\n');
 
 		var expected = [
@@ -361,13 +377,14 @@ suite('JSON - formatter', () => {
 
 		format(content, expected);
 	});
+	
 
 	test('range with existing indent - tabs', () => {
 		var content = [
 			'{ "a": {},',
 			'|  "b": [null],   ',
 			'"c": {}',
-			'} |    '
+			'}|    '
 		].join('\n');
 
 		var expected = [
@@ -382,7 +399,21 @@ suite('JSON - formatter', () => {
 		format(content, expected, false);
 	});
 
+	test('property range - issue 14623', () => {
+		var content = [
+			'{ |"a" :| 1,',
+			'  "b": 1',
+			'}'
+		].join('\n');
 
+		var expected = [
+			'{ "a": 1,',
+			'  "b": 1',
+			'}'
+		].join('\n');
+
+		format(content, expected, false);
+	});
 	test('block comment none-line breaking symbols', () => {
 		var content = [
 			'{ "a": [ 1',
@@ -441,4 +472,15 @@ suite('JSON - formatter', () => {
 
 		format(content, expected);
 	});
+	test('random content', () => {
+		var content = [
+			'a 1 b 1 3 true'
+		].join('\n');
+
+		var expected = [
+			'a 1 b 1 3 true',
+		].join('\n');
+
+		format(content, expected);
+	});	
 });
