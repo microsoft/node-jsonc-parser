@@ -244,7 +244,6 @@ suite('JSON', () => {
 
 	test('parse: array with errors', () => {
 		assertInvalidParse('[,]', []);
-		assertInvalidParse('[ 1, 2, ]', [1, 2]);
 		assertInvalidParse('[ 1 2, 3 ]', [1, 2, 3]);
 		assertInvalidParse('[ ,1, 2, 3 ]', [1, 2, 3]);
 		assertInvalidParse('[ ,1, 2, 3, ]', [1, 2, 3]);
@@ -265,9 +264,12 @@ suite('JSON', () => {
 		assertValidParse('{ "hello": [] }', { hello: [] }, options);
 		assertValidParse('{ "hello": [], "world": {}, }', { hello: [], world: {} }, options);
 		assertValidParse('{ "hello": [], "world": {} }', { hello: [], world: {} }, options);
+		assertValidParse('[ 1, 2, ]', [1, 2], options);
+		assertValidParse('[ 1, 2 ]', [1, 2], options);
 
 		assertInvalidParse('{ "hello": [], }', { hello: [] });
 		assertInvalidParse('{ "hello": [], "world": {}, }', { hello: [], world: {} });
+		assertInvalidParse('[ 1, 2, ]', [1, 2]);
 	});
 	test('location: properties', () => {
 		assertLocation('|{ "foo": "bar" }', [], void 0, false);
