@@ -35,9 +35,7 @@ function assertValidParse(input: string, expected: any, options?: ParseOptions):
 	var errors: ParseError[] = [];
 	var actual = parse(input, errors, options);
 
-	if (errors.length !== 0) {
-		assert.notEqual("undefined", typeof errors[0].error);
-	}
+	assert.deepEqual([], errors)
 	assert.deepEqual(actual, expected);
 }
 
