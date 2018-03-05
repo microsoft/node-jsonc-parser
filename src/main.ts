@@ -326,19 +326,18 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 				if (text.charCodeAt(pos + 1) === CharacterCodes.asterisk) {
 					pos += 2;
 
-					let safeLength = len - 1; // For lookahead.
 					let commentClosed = false;
-					while (pos < safeLength) {
+					while (pos < len) {
 						let ch = text.charCodeAt(pos);
 
-						if (ch === CharacterCodes.asterisk && text.charCodeAt(pos + 1) === CharacterCodes.slash) {
+						if (ch === CharacterCodes.asterisk && (pos + 1 < len) && text.charCodeAt(pos + 1) === CharacterCodes.slash) {
 							pos += 2;
 							commentClosed = true;
 							break;
 						}
 						pos++;
 					}
-
+					
 					if (!commentClosed) {
 						pos++;
 						scanError = ScanError.UnexpectedEndOfComment;
@@ -638,7 +637,13 @@ export enum ParseErrorCode {
 	CloseBraceExpected,
 	CloseBracketExpected,
 	EndOfFileExpected,
-	InvalidCommentToken
+	InvalidCommentToken,
+	UnexpectedEndOfComment,
+	UnexpectedEndOfString,
+	UnexpectedEndOfNumber,
+	InvalidUnicode,
+	InvalidEscapeCharacter,
+	InvalidCharacter
 }
 
 export type NodeType = 'object' | 'array' | 'property' | 'string' | 'number' | 'boolean' | 'null';
@@ -1008,6 +1013,28 @@ export function visit(text: string, visitor: JSONVisitor, options?: ParseOptions
 	function scanNext(): SyntaxKind {
 		while (true) {
 			let token = _scanner.scan();
+			switch (_scanner.getTokenError()) {
+				case ScanError.InvalidUnicode:
+					handleError(ParseErrorCode.InvalidUnicode);
+					break;
+				case ScanError.InvalidEscapeCharacter:
+					handleError(ParseErrorCode.InvalidEscapeCharacter);
+					break;
+				case ScanError.UnexpectedEndOfNumber:
+					handleError(ParseErrorCode.UnexpectedEndOfNumber);
+					break;
+				case ScanError.UnexpectedEndOfComment:
+					if (!disallowComments) {
+						handleError(ParseErrorCode.UnexpectedEndOfComment);
+					}
+					break;
+				case ScanError.UnexpectedEndOfString:
+					handleError(ParseErrorCode.UnexpectedEndOfString);
+					break;
+				case ScanError.InvalidCharacter:
+					handleError(ParseErrorCode.InvalidCharacter);
+					break;
+			}
 			switch (token) {
 				case SyntaxKind.LineCommentTrivia:
 				case SyntaxKind.BlockCommentTrivia:
