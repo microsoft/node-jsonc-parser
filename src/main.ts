@@ -637,7 +637,8 @@ export enum ParseErrorCode {
 	CommaExpected,
 	CloseBraceExpected,
 	CloseBracketExpected,
-	EndOfFileExpected
+	EndOfFileExpected,
+	InvalidCommentToken
 }
 
 export type NodeType = 'object' | 'array' | 'property' | 'string' | 'number' | 'boolean' | 'null';
@@ -999,6 +1000,7 @@ export function visit(text: string, visitor: JSONVisitor, options?: ParseOptions
 		onArrayEnd = toNoArgVisit(visitor.onArrayEnd),
 		onLiteralValue = toOneArgVisit(visitor.onLiteralValue),
 		onSeparator = toOneArgVisit(visitor.onSeparator),
+		onComment = toNoArgVisit(visitor.onComment),
 		onError = toOneArgVisit(visitor.onError);
 
 	let disallowComments = options && options.disallowComments;
@@ -1010,7 +1012,9 @@ export function visit(text: string, visitor: JSONVisitor, options?: ParseOptions
 				case SyntaxKind.LineCommentTrivia:
 				case SyntaxKind.BlockCommentTrivia:
 					if (disallowComments) {
-						handleError(ParseErrorCode.InvalidSymbol);
+						handleError(ParseErrorCode.InvalidCommentToken);
+					} else {
+						onComment();
 					}
 					break;
 				case SyntaxKind.Unknown:
@@ -1227,7 +1231,12 @@ export interface JSONVisitor {
 	/**
 	 * Invoked when a comma or colon separator is encountered. The offset and length represent the location of the separator.
 	 */
-	onSeparator?: (charcter: string, offset: number, length: number) => void;
+	onSeparator?: (character: string, offset: number, length: number) => void;
+
+	/**
+	 * When comments are allowed, invoked when a line or block comment is encountered. The offset and length represent the location of the comment.
+	 */
+	onComment?: (offset: number, length: number) => void;
 
 	/**
 	 * Invoked on an error.
@@ -1271,11 +1280,11 @@ export interface FormattingOptions {
 	/**
 	 * If indentation is based on spaces (`insertSpaces` = true), then what is the number of spaces that make an indent?
 	 */
-	tabSize: number;
+	tabSize?: number;
 	/**
 	 * Is indentation based on spaces?
 	 */
-	insertSpaces: boolean;
+	insertSpaces?: boolean;
 	/**
 	 * The default 'end of line' character. If not set, '\n' is used as default.
 	 */
@@ -1295,7 +1304,7 @@ export interface FormattingOptions {
  * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
  * To apply edits to an input, you can use `applyEdits`
  */
-export function format(documentText: string, range: Range, options: FormattingOptions): Edit[] {
+export function format(documentText: string, range: Range | undefined, options: FormattingOptions): Edit[] {
 	return _format(documentText, range, options);
 }
 

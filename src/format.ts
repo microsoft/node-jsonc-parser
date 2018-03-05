@@ -39,7 +39,7 @@ export function format(documentText: string, range: Json.Range | undefined, opti
 	let indentLevel = 0;
 	let indentValue: string;
 	if (options.insertSpaces) {
-		indentValue = repeat(' ', options.tabSize);
+		indentValue = repeat(' ', options.tabSize || 4);
 	} else {
 		indentValue = '\t';
 	}
@@ -126,7 +126,7 @@ export function format(documentText: string, range: Json.Range | undefined, opti
 						replaceContent = '';
 						break;
 					}
-					// fall through
+				// fall through
 				case Json.SyntaxKind.NullKeyword:
 				case Json.SyntaxKind.TrueKeyword:
 				case Json.SyntaxKind.FalseKeyword:

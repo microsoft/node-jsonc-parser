@@ -7,8 +7,9 @@
 import * as assert from 'assert';
 import {
 	SyntaxKind, createScanner, parse, getLocation, Node, ParseError, parseTree, ParseErrorCode,
-	ParseOptions, Segment, findNodeAtLocation, getNodeValue, ScanError, Location
+	ParseOptions, Segment, findNodeAtLocation, getNodeValue, ScanError, Location, visit, JSONVisitor
 } from '../main';
+import { truncateSync } from 'fs';
 
 function assertKinds(text: string, ...kinds: SyntaxKind[]): void {
 	var scanner = createScanner(text);
@@ -66,11 +67,40 @@ function assertTree(input: string, expected: any, expectedErrors: ParseError[] =
 	assert.deepEqual(actual, expected);
 }
 
+interface VisitorCallback {
+	id: keyof JSONVisitor,
+	text: string;
+	arg?: any;
+};
+
+function assertVisit(input: string, expected: VisitorCallback[], expectedErrors: ParseError[] = [], disallowComments = false): void {
+	let errors: ParseError[] = [];
+	let actuals: VisitorCallback[] = [];
+	let noArgHalder = (id: keyof JSONVisitor) => (offset: number, length: number) => actuals.push({ id, text: input.substr(offset, length) });
+	let oneArgHalder = (id: keyof JSONVisitor) => (arg: any, offset: number, length: number) => actuals.push({ id, text: input.substr(offset, length), arg });
+	visit(input, {
+		onObjectBegin: noArgHalder('onObjectBegin'),
+		onObjectProperty: oneArgHalder('onObjectProperty'),
+		onObjectEnd: noArgHalder('onObjectEnd'),
+		onArrayBegin: noArgHalder('onArrayBegin'),
+		onArrayEnd: noArgHalder('onArrayEnd'),
+		onLiteralValue: oneArgHalder('onLiteralValue'),
+		onSeparator: oneArgHalder('onSeparator'),
+		onComment: noArgHalder('onComment'),
+		onError: (error: ParseErrorCode, offset: number, length: number) => {
+			errors.push({ error, offset, length })
+		}
+	}, {
+			disallowComments
+		});
+	assert.deepEqual(errors, expectedErrors);
+	assert.deepEqual(actuals, expected);
+}
+
 function assertNodeAtLocation(input: Node, segments: Segment[], expected: any) {
 	let actual = findNodeAtLocation(input, segments);
 	assert.deepEqual(actual ? getNodeValue(actual) : void 0, expected);
 }
-
 
 function assertLocation(input: string, expectedSegments: Segment[], expectedNodeType: string | undefined, expectedCompleteProperty: boolean): void {
 	var offset = input.indexOf('|');
@@ -386,6 +416,25 @@ suite('JSON', () => {
 			]);
 	});
 
+	test('visit: object', () => {
+		assertVisit('{ }', [{ id: 'onObjectBegin', text: '{' }, { id: 'onObjectEnd', text: '}' }]);
+		assertVisit('{ "foo": "bar" }', [{ id: 'onObjectBegin', text: '{' }, { id: 'onObjectProperty', text: '"foo"', arg: 'foo' }, { id: 'onSeparator', text: ':', arg: ':' }, { id: 'onLiteralValue', text: '"bar"', arg: 'bar' }, { id: 'onObjectEnd', text: '}' }]);
+		assertVisit('{ "foo": { "goo": 3 } }', [{ id: 'onObjectBegin', text: '{' }, { id: 'onObjectProperty', text: '"foo"', arg: 'foo' }, { id: 'onSeparator', text: ':', arg: ':' }, { id: 'onObjectBegin', text: '{' }, { id: 'onObjectProperty', text: '"goo"', arg: 'goo' }, { id: 'onSeparator', text: ':', arg: ':' }, { id: 'onLiteralValue', text: '3', arg: 3 }, { id: 'onObjectEnd', text: '}' }, { id: 'onObjectEnd', text: '}' }]);
+	});
+
+	test('visit: array', () => {
+		assertVisit('[]', [{ id: 'onArrayBegin', text: '[' }, { id: 'onArrayEnd', text: ']' }]);
+		assertVisit('[ true, null, [] ]', [{ id: 'onArrayBegin', text: '[' }, { id: 'onLiteralValue', text: 'true', arg: true }, { id: 'onSeparator', text: ',', arg: ',' }, { id: 'onLiteralValue', text: 'null', arg: null }, { id: 'onSeparator', text: ',', arg: ',' }, { id: 'onArrayBegin', text: '[' }, { id: 'onArrayEnd', text: ']' }, { id: 'onArrayEnd', text: ']' }]);
+	});
+
+	test('visit: comment', () => {
+		assertVisit('/* g */ { "foo": //f\n"bar" }', [{ id: 'onComment', text: '/* g */' }, { id: 'onObjectBegin', text: '{' }, { id: 'onObjectProperty', text: '"foo"', arg: 'foo' }, { id: 'onSeparator', text: ':', arg: ':' }, { id: 'onComment', text: '//f' }, { id: 'onLiteralValue', text: '"bar"', arg: 'bar' }, { id: 'onObjectEnd', text: '}' }]);
+		assertVisit('/* g */ { "foo": //f\n"bar" }',
+			[{ id: 'onObjectBegin', text: '{' }, { id: 'onObjectProperty', text: '"foo"', arg: 'foo' }, { id: 'onSeparator', text: ':', arg: ':' }, { id: 'onLiteralValue', text: '"bar"', arg: 'bar' }, { id: 'onObjectEnd', text: '}' }],
+			[{ error: ParseErrorCode.InvalidCommentToken, offset: 0, length: 7 }, { error: ParseErrorCode.InvalidCommentToken, offset: 17, length: 3 }],
+			true);
+	});
+
 	test('tree: find location', () => {
 		let root = parseTree('{ "key1": { "key11": [ "val111", "val112" ] }, "key2": [ { "key21": false, "key22": 221 }, null, [{}] ] }');
 		assertNodeAtLocation(root, ['key1'], { key11: ['val111', 'val112'] });
@@ -408,4 +457,6 @@ suite('JSON', () => {
 		assertMatchesLocation('{ "dependencies": { "fo|": 1 } }', ['dependencies']);
 		assertMatchesLocation('{ "dependencies": { "fo": | } }', ['dependencies', '*']);
 	});
+
+
 });

@@ -1,4 +1,9 @@
 
+1.0.2 2018-03-05
+==================
+ - added the *visit.onComment* API, reported when comments are allowed.
+ - added the *ParseErrorCode.InvalidCommentToken* enum value, reported when comments are disallowed.
+
 1.0.1
 ==================
  - added the *format* API: computes edits to format a JSON document.

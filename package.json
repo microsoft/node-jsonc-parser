@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "mocha": "^2.4.5",
-    "typescript": "^2.7.1",
+    "typescript": "^2.7.2",
     "@types/node": "^7.0.43",
     "@types/mocha": "^2.2.32",
     "tslint": "^5.9.1"
@@ -24,6 +24,8 @@
     "prepare": "tsc -p ./src",
     "compile": "tsc -p ./src",
     "watch": "tsc -w -p ./src",
-    "test": "tsc -p ./src && mocha"
+    "test": "tsc -p ./src && mocha",
+    "preversion": "npm test",
+    "postversion": "git push && git push --tags"
   }
 }

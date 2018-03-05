@@ -17,7 +17,6 @@ suite('JSON - formatter', () => {
 		if (rangeStart !== -1 && rangeEnd !== -1) {
 			content = content.substring(0, rangeStart) + content.substring(rangeStart + 1, rangeEnd) + content.substring(rangeEnd + 1);
 			range = { offset: rangeStart, length: rangeEnd - rangeStart };
-			console.log(content.substr(range.offset, range.length) + '<');
 		}
 
 		var edits = Formatter.format(content, range, { tabSize: 2, insertSpaces: insertSpaces, eol: '\n' });
@@ -377,7 +376,7 @@ suite('JSON - formatter', () => {
 
 		format(content, expected);
 	});
-	
+
 
 	test('range with existing indent - tabs', () => {
 		var content = [
@@ -482,5 +481,5 @@ suite('JSON - formatter', () => {
 		].join('\n');
 
 		format(content, expected);
-	});	
+	});
 });
