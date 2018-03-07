@@ -1,12 +1,12 @@
 {
 	"compilerOptions": {
 		"target": "ES5",
-		"module": "umd",
+		"module": "es6",
 		"moduleResolution": "node",
 		"sourceMap": true,
 		"declaration": true,
 		"stripInternal": true,
-		"outDir": "../lib/umd",
+		"outDir": "../lib/esm",
 		"strict": true,
 		"lib": [
 			"es5",

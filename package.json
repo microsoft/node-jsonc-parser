@@ -2,8 +2,9 @@
   "name": "jsonc-parser",
   "version": "1.0.2",
   "description": "Scanner and parser for JSON with comments.",
-  "main": "./lib/main.js",
-  "typings": "./lib/main",
+  "main": "./lib/umd/main.js",
+  "typings": "./lib/umd/main",
+  "module": "./lib/esm/main.js",
   "author": "Microsoft Corporation",
   "repository": {
     "type": "git",
@@ -21,10 +22,10 @@
     "tslint": "^5.9.1"
   },
   "scripts": {
-    "prepare": "tsc -p ./src",
-    "compile": "tsc -p ./src",
+    "prepare": "npm run compile",
+    "compile": "tsc -p ./src && tsc -p ./src/tsconfig.esm.json",
     "watch": "tsc -w -p ./src",
-    "test": "tsc -p ./src && mocha",
+    "test": "npm run compile && mocha",
     "preversion": "npm test",
     "postversion": "git push && git push --tags"
   }
