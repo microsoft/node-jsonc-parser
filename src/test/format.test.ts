@@ -5,7 +5,7 @@
 'use strict';
 
 import * as assert from 'assert';
-import * as Formatter from '../format';
+import * as Formatter from '../impl/format';
 import { Range } from '../main';
 
 suite('JSON - formatter', () => {

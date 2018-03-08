@@ -1,6 +1,7 @@
 .vscode/
 lib/**/test/
 lib/**/*.map
+lib/*/*/*.d.ts
 src/
 test/
 .eslintrc

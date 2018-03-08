@@ -4,9 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import * as Json from './main';
+import { Range, FormattingOptions, Edit, SyntaxKind, ScanError} from '../main';
+import { createScanner } from './scanner';
 
-export function format(documentText: string, range: Json.Range | undefined, options: Json.FormattingOptions): Json.Edit[] {
+export function format(documentText: string, range: Range | undefined, options: FormattingOptions): Edit[] {
 	let initialIndentLevel: number;
 	let formatText: string;
 	let formatTextStart: number;
@@ -44,23 +45,23 @@ export function format(documentText: string, range: Json.Range | undefined, opti
 		indentValue = '\t';
 	}
 
-	let scanner = Json.createScanner(formatText, false);
+	let scanner = createScanner(formatText, false);
 	let hasError = false;
 
 	function newLineAndIndent(): string {
 		return eol + repeat(indentValue, initialIndentLevel + indentLevel);
 	}
-	function scanNext(): Json.SyntaxKind {
+	function scanNext(): SyntaxKind {
 		let token = scanner.scan();
 		lineBreak = false;
-		while (token === Json.SyntaxKind.Trivia || token === Json.SyntaxKind.LineBreakTrivia) {
-			lineBreak = lineBreak || (token === Json.SyntaxKind.LineBreakTrivia);
+		while (token === SyntaxKind.Trivia || token === SyntaxKind.LineBreakTrivia) {
+			lineBreak = lineBreak || (token === SyntaxKind.LineBreakTrivia);
 			token = scanner.scan();
 		}
-		hasError = token === Json.SyntaxKind.Unknown || scanner.getTokenError() !== Json.ScanError.None;
+		hasError = token === SyntaxKind.Unknown || scanner.getTokenError() !== ScanError.None;
 		return token;
 	}
-	let editOperations: Json.Edit[] = [];
+	let editOperations: Edit[] = [];
 	function addEdit(text: string, startOffset: number, endOffset: number) {
 		if (!hasError && startOffset < rangeEnd && endOffset > rangeStart && documentText.substring(startOffset, endOffset) !== text) {
 			editOperations.push({ offset: startOffset, length: endOffset - startOffset, content: text });
@@ -69,48 +70,48 @@ export function format(documentText: string, range: Json.Range | undefined, opti
 
 	let firstToken = scanNext();
 
-	if (firstToken !== Json.SyntaxKind.EOF) {
+	if (firstToken !== SyntaxKind.EOF) {
 		let firstTokenStart = scanner.getTokenOffset() + formatTextStart;
 		let initialIndent = repeat(indentValue, initialIndentLevel);
 		addEdit(initialIndent, formatTextStart, firstTokenStart);
 	}
 
-	while (firstToken !== Json.SyntaxKind.EOF) {
+	while (firstToken !== SyntaxKind.EOF) {
 		let firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
 		let secondToken = scanNext();
 
 		let replaceContent = '';
-		while (!lineBreak && (secondToken === Json.SyntaxKind.LineCommentTrivia || secondToken === Json.SyntaxKind.BlockCommentTrivia)) {
+		while (!lineBreak && (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia)) {
 			// comments on the same line: keep them on the same line, but ignore them otherwise
 			let commentTokenStart = scanner.getTokenOffset() + formatTextStart;
 			addEdit(' ', firstTokenEnd, commentTokenStart);
 			firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
-			replaceContent = secondToken === Json.SyntaxKind.LineCommentTrivia ? newLineAndIndent() : '';
+			replaceContent = secondToken === SyntaxKind.LineCommentTrivia ? newLineAndIndent() : '';
 			secondToken = scanNext();
 		}
 
-		if (secondToken === Json.SyntaxKind.CloseBraceToken) {
-			if (firstToken !== Json.SyntaxKind.OpenBraceToken) {
+		if (secondToken === SyntaxKind.CloseBraceToken) {
+			if (firstToken !== SyntaxKind.OpenBraceToken) {
 				indentLevel--;
 				replaceContent = newLineAndIndent();
 			}
-		} else if (secondToken === Json.SyntaxKind.CloseBracketToken) {
-			if (firstToken !== Json.SyntaxKind.OpenBracketToken) {
+		} else if (secondToken === SyntaxKind.CloseBracketToken) {
+			if (firstToken !== SyntaxKind.OpenBracketToken) {
 				indentLevel--;
 				replaceContent = newLineAndIndent();
 			}
 		} else {
 			switch (firstToken) {
-				case Json.SyntaxKind.OpenBracketToken:
-				case Json.SyntaxKind.OpenBraceToken:
+				case SyntaxKind.OpenBracketToken:
+				case SyntaxKind.OpenBraceToken:
 					indentLevel++;
 					replaceContent = newLineAndIndent();
 					break;
-				case Json.SyntaxKind.CommaToken:
-				case Json.SyntaxKind.LineCommentTrivia:
+				case SyntaxKind.CommaToken:
+				case SyntaxKind.LineCommentTrivia:
 					replaceContent = newLineAndIndent();
 					break;
-				case Json.SyntaxKind.BlockCommentTrivia:
+				case SyntaxKind.BlockCommentTrivia:
 					if (lineBreak) {
 						replaceContent = newLineAndIndent();
 					} else {
@@ -118,32 +119,32 @@ export function format(documentText: string, range: Json.Range | undefined, opti
 						replaceContent = ' ';
 					}
 					break;
-				case Json.SyntaxKind.ColonToken:
+				case SyntaxKind.ColonToken:
 					replaceContent = ' ';
 					break;
-				case Json.SyntaxKind.StringLiteral:
-					if (secondToken === Json.SyntaxKind.ColonToken) {
+				case SyntaxKind.StringLiteral:
+					if (secondToken === SyntaxKind.ColonToken) {
 						replaceContent = '';
 						break;
 					}
 				// fall through
-				case Json.SyntaxKind.NullKeyword:
-				case Json.SyntaxKind.TrueKeyword:
-				case Json.SyntaxKind.FalseKeyword:
-				case Json.SyntaxKind.NumericLiteral:
-				case Json.SyntaxKind.CloseBraceToken:
-				case Json.SyntaxKind.CloseBracketToken:
-					if (secondToken === Json.SyntaxKind.LineCommentTrivia || secondToken === Json.SyntaxKind.BlockCommentTrivia) {
+				case SyntaxKind.NullKeyword:
+				case SyntaxKind.TrueKeyword:
+				case SyntaxKind.FalseKeyword:
+				case SyntaxKind.NumericLiteral:
+				case SyntaxKind.CloseBraceToken:
+				case SyntaxKind.CloseBracketToken:
+					if (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia) {
 						replaceContent = ' ';
-					} else if (secondToken !== Json.SyntaxKind.CommaToken && secondToken !== Json.SyntaxKind.EOF) {
+					} else if (secondToken !== SyntaxKind.CommaToken && secondToken !== SyntaxKind.EOF) {
 						hasError = true;
 					}
 					break;
-				case Json.SyntaxKind.Unknown:
+				case SyntaxKind.Unknown:
 					hasError = true;
 					break;
 			}
-			if (lineBreak && (secondToken === Json.SyntaxKind.LineCommentTrivia || secondToken === Json.SyntaxKind.BlockCommentTrivia)) {
+			if (lineBreak && (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia)) {
 				replaceContent = newLineAndIndent();
 			}
 
@@ -163,7 +164,7 @@ function repeat(s: string, count: number): string {
 	return result;
 }
 
-function computeIndentLevel(content: string, offset: number, options: Json.FormattingOptions): number {
+function computeIndentLevel(content: string, offset: number, options: FormattingOptions): number {
 	let i = 0;
 	let nChars = 0;
 	let tabSize = options.tabSize || 4;
@@ -181,7 +182,7 @@ function computeIndentLevel(content: string, offset: number, options: Json.Forma
 	return Math.floor(nChars / tabSize);
 }
 
-function getEOL(options: Json.FormattingOptions, text: string): string {
+function getEOL(options: FormattingOptions, text: string): string {
 	for (let i = 0; i < text.length; i++) {
 		let ch = text.charAt(i);
 		if (ch === '\r') {

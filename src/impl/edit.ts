@@ -4,8 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import { Edit, FormattingOptions, ParseError, Node, parseTree, findNodeAtLocation, JSONPath, Segment } from './main';
+import { Edit, FormattingOptions, ParseError, Node, JSONPath, Segment } from '../main';
 import { format, isEOL } from './format';
+import { parseTree, findNodeAtLocation } from './parser';
 
 export function removeProperty(text: string, path: JSONPath, formattingOptions: FormattingOptions): Edit[] {
 	return setProperty(text, path, void 0, formattingOptions);
