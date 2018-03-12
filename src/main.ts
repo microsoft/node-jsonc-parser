@@ -54,7 +54,7 @@ export interface JSONScanner {
 	 */
 	setPosition(pos: number): void;
 	/**
-	 * Read the next token. Returns the tolen code.
+	 * Read the next token. Returns the token code.
 	 */
 	scan(): SyntaxKind;
 	/**
