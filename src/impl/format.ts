@@ -26,7 +26,7 @@ export function format(documentText: string, range: Range | undefined, options: 
 			endOffset++;
 		}
 		formatText = documentText.substring(formatTextStart, endOffset);
-		initialIndentLevel = computeIndentLevel(formatText, 0, options);
+		initialIndentLevel = computeIndentLevel(formatText, options);
 	} else {
 		formatText = documentText;
 		initialIndentLevel = 0;
@@ -164,7 +164,7 @@ function repeat(s: string, count: number): string {
 	return result;
 }
 
-function computeIndentLevel(content: string, offset: number, options: FormattingOptions): number {
+function computeIndentLevel(content: string, options: FormattingOptions): number {
 	let i = 0;
 	let nChars = 0;
 	let tabSize = options.tabSize || 4;
