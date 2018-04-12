@@ -142,7 +142,7 @@ export interface Node {
     value?: any;
     offset: number;
     length: number;
-    columnOffset?: number;
+    colonOffset?: number;
     parent?: Node;
     children?: Node[];
 }
@@ -190,6 +190,16 @@ export interface Location {
  * Finds the node at the given path in a JSON DOM.
  */
 export function findNodeAtLocation(root: Node, path: JSONPath): Node | undefined;
+
+/**
+ * Finds the most inner node at the given offset. If includeRightBound is set, also finds nodes that end at the given offset.
+ */
+export function findNodeAtOffset(root: Node, offset: number, includeRightBound?: boolean) : Node | undefined;
+
+/**
+ * Gets the JSON path of the given JSON DOM node
+ */
+export function getNodePath(node: Node) : JSONPath;
 
 /**
  * Evaluates the JavaScript object of the given JSON DOM node 

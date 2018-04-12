@@ -1,3 +1,8 @@
+2.0.0 2018-04-12
+==================
+ - renamed Node.columnOffset to Node.colonOffset
+ - new API getNodePath: Gets the JSON path of the given JSON DOM node
+ - new API findNodeAtOffset: Finds the most inner node at the given offset. If includeRightBound is set, also finds nodes that end at the given offset.
 
 1.0.3 2018-03-07
 ==================

@@ -7,7 +7,7 @@
 import * as assert from 'assert';
 import {
 	SyntaxKind, createScanner, parse, getLocation, Node, ParseError, parseTree, ParseErrorCode,
-	ParseOptions, Segment, findNodeAtLocation, getNodeValue, ScanError, Location, visit, JSONVisitor
+	ParseOptions, Segment, findNodeAtLocation, getNodeValue, getNodePath, ScanError, Location, visit, JSONVisitor
 } from '../main';
 import { truncateSync } from 'fs';
 
@@ -57,7 +57,7 @@ function assertTree(input: string, expected: any, expectedErrors: ParseError[] =
 		if (node.children) {
 			for (let child of node.children) {
 				assert.equal(node, child.parent);
-				delete child.parent; // delete to avoid recursion in deep equal
+				delete (<any>child).parent; // delete to avoid recursion in deep equal
 				checkParent(child);
 			}
 		}
@@ -100,6 +100,9 @@ function assertVisit(input: string, expected: VisitorCallback[], expectedErrors:
 function assertNodeAtLocation(input: Node, segments: Segment[], expected: any) {
 	let actual = findNodeAtLocation(input, segments);
 	assert.deepEqual(actual ? getNodeValue(actual) : void 0, expected);
+	if (actual) {
+		assert.deepEqual(getNodePath(actual), segments);
+	}
 }
 
 function assertLocation(input: string, expectedSegments: Segment[], expectedNodeType: string | undefined, expectedCompleteProperty: boolean): void {
@@ -361,7 +364,7 @@ suite('JSON', () => {
 		assertTree('{ "val": 1 }', {
 			type: 'object', offset: 0, length: 12, children: [
 				{
-					type: 'property', offset: 2, length: 8, columnOffset: 7, children: [
+					type: 'property', offset: 2, length: 8, colonOffset: 7, children: [
 						{ type: 'string', offset: 2, length: 5, value: 'val' },
 						{ type: 'number', offset: 9, length: 1, value: 1 }
 					]
@@ -372,13 +375,13 @@ suite('JSON', () => {
 			{
 				type: 'object', offset: 0, length: 32, children: [
 					{
-						type: 'property', offset: 1, length: 9, columnOffset: 5, children: [
+						type: 'property', offset: 1, length: 9, colonOffset: 5, children: [
 							{ type: 'string', offset: 1, length: 4, value: 'id' },
 							{ type: 'string', offset: 7, length: 3, value: '$' }
 						]
 					},
 					{
-						type: 'property', offset: 12, length: 18, columnOffset: 15, children: [
+						type: 'property', offset: 12, length: 18, colonOffset: 15, children: [
 							{ type: 'string', offset: 12, length: 3, value: 'v' },
 							{
 								type: 'array', offset: 17, length: 13, children: [
@@ -395,12 +398,12 @@ suite('JSON', () => {
 			{
 				type: 'object', offset: 0, length: 27, children: [
 					{
-						type: 'property', offset: 3, length: 20, columnOffset: 7, children: [
+						type: 'property', offset: 3, length: 20, colonOffset: 7, children: [
 							{ type: 'string', offset: 3, length: 4, value: 'id' },
 							{
 								type: 'object', offset: 9, length: 14, children: [
 									{
-										type: 'property', offset: 11, length: 10, columnOffset: 16, children: [
+										type: 'property', offset: 11, length: 10, colonOffset: 16, children: [
 											{ type: 'string', offset: 11, length: 5, value: 'foo' },
 											{ type: 'object', offset: 18, length: 3, children: [] }
 										]
