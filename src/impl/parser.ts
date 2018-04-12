@@ -5,9 +5,20 @@
 'use strict';
 
 import { createScanner } from './scanner';
-import { ScanError, SyntaxKind, Node, NodeType, Edit, JSONPath, FormattingOptions, 
-	ModificationOptions, ParseError, ParseErrorCode, Location, Segment, ParseOptions, JSONVisitor } from '../main';
+import {
+	ScanError, SyntaxKind, Node, NodeType, Edit, JSONPath, FormattingOptions,
+	ModificationOptions, ParseError, ParseErrorCode, Location, Segment, ParseOptions, JSONVisitor
+} from '../main';
 
+interface NodeImpl extends Node {
+	type: NodeType;
+	value?: any;
+	offset: number;
+	length: number;
+	colonOffset?: number;
+	parent?: NodeImpl;
+	children?: NodeImpl[];
+}
 
 /**
  * For a given offset, evaluate the location in the JSON document. Each segment in the location path is either a property name or an array index.
@@ -15,12 +26,13 @@ import { ScanError, SyntaxKind, Node, NodeType, Edit, JSONPath, FormattingOption
 export function getLocation(text: string, position: number): Location {
 	let segments: Segment[] = []; // strings or numbers
 	let earlyReturnException = new Object();
-	let previousNode: Node | undefined = void 0;
-	const previousNodeInst: Node = {
+	let previousNode: NodeImpl | undefined = void 0;
+	const previousNodeInst: NodeImpl = {
 		value: {},
 		offset: 0,
 		length: 0,
-		type: 'object'
+		type: 'object',
+		parent: void 0
 	};
 	let isAtPropertyKey = false;
 	function setPreviousNode(value: string, offset: number, length: number, type: NodeType) {
@@ -28,7 +40,7 @@ export function getLocation(text: string, position: number): Location {
 		previousNodeInst.offset = offset;
 		previousNodeInst.length = length;
 		previousNodeInst.type = type;
-		previousNodeInst.columnOffset = void 0;
+		previousNodeInst.colonOffset = void 0;
 		previousNode = previousNodeInst;
 	}
 	try {
@@ -88,7 +100,7 @@ export function getLocation(text: string, position: number): Location {
 					throw earlyReturnException;
 				}
 				if (sep === ':' && previousNode && previousNode.type === 'property') {
-					previousNode.columnOffset = offset;
+					previousNode.colonOffset = offset;
 					isAtPropertyKey = false;
 					previousNode = void 0;
 				} else if (sep === ',') {
@@ -183,7 +195,7 @@ export function parse(text: string, errors: ParseError[] = [], options?: ParseOp
  * Parses the given text and returns a tree representation the JSON content. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
  */
 export function parseTree(text: string, errors: ParseError[] = [], options?: ParseOptions): Node {
-	let currentParent: Node = { type: 'array', offset: -1, length: -1, children: [] }; // artificial root
+	let currentParent: NodeImpl = { type: 'array', offset: -1, length: -1, children: [], parent: void 0 }; // artificial root
 
 	function ensurePropertyComplete(endOffset: number) {
 		if (currentParent.type === 'property') {
@@ -225,7 +237,7 @@ export function parseTree(text: string, errors: ParseError[] = [], options?: Par
 		onSeparator: (sep: string, offset: number, length: number) => {
 			if (currentParent.type === 'property') {
 				if (sep === ':') {
-					currentParent.columnOffset = offset;
+					currentParent.colonOffset = offset;
 				} else if (sep === ',') {
 					ensurePropertyComplete(offset);
 				}
@@ -280,19 +292,74 @@ export function findNodeAtLocation(root: Node, path: JSONPath): Node | undefined
 }
 
 /**
+ * Gets the JSON path of the given JSON DOM node
+ */
+export function getNodePath(node: Node): JSONPath {
+	if (!node.parent || !node.parent.children) {
+		return [];
+	}
+	let path = getNodePath(node.parent);
+	if (node.parent.type === 'property') {
+		let key = node.parent.children[0].value
+		path.push(key);
+	} else if (node.parent.type === 'array') {
+		let index = node.parent.children.indexOf(node);
+		if (index !== -1) {
+			path.push(index);
+		}
+	}
+	return path;
+}
+
+/**
  * Evaluates the JavaScript object of the given JSON DOM node 
  */
 export function getNodeValue(node: Node): any {
-	if (node.type === 'array') {
-		return node.children!.map(getNodeValue);
-	} else if (node.type === 'object') {
-		let obj = Object.create(null);
-		for (let prop of node.children!) {
-			obj[prop.children![0].value] = getNodeValue(prop.children![1]);
-		}
-		return obj;
+	switch (node.type) {
+		case 'array':
+			return node.children!.map(getNodeValue);
+		case 'object':
+			let obj = Object.create(null);
+			for (let prop of node.children!) {
+				let valueNode = prop.children![1];
+				if (valueNode) {
+					obj[prop.children![0].value] = getNodeValue(valueNode);
+				}
+			}
+			return obj;
+		case 'null':
+		case 'string':
+		case 'number':
+		case 'boolean':
+			return node.value;
+		default:
+			return void 0;
 	}
-	return node.value;
+
+}
+
+export function contains(node: Node, offset: number, includeRightBound = false): boolean {
+	return (offset >= node.offset && offset < (node.offset + node.length)) || includeRightBound && (offset === (node.offset + node.length));
+}
+
+/**
+ * Finds the most inner node at the given offset. If includeRightBound is set, also finds nodes that end at the given offset.
+ */
+export function findNodeAtOffset(node: Node, offset: number, includeRightBound = false): Node | undefined {
+	if (contains(node, offset, includeRightBound)) {
+		let children = node.children;
+		if (Array.isArray(children)) {
+			for (let i = 0; i < children.length && children[i].offset <= offset; i++) {
+				let item = findNodeAtOffset(children[i], offset, includeRightBound);
+				if (item) {
+					return item;
+				}
+			}
+
+		}
+		return node;
+	}
+	return void 0;
 }
 
 

@@ -106,6 +106,16 @@ export const parseTree: (text: string, errors?: ParseError[], options?: ParseOpt
 export const findNodeAtLocation: (root: Node, path: JSONPath) => Node | undefined = parser.findNodeAtLocation;
 
 /**
+ * Finds the most inner node at the given offset. If includeRightBound is set, also finds nodes that end at the given offset.
+ */
+export const findNodeAtOffset: (root: Node, offset: number, includeRightBound?: boolean) => Node | undefined = parser.findNodeAtOffset;
+
+/**
+ * Gets the JSON path of the given JSON DOM node
+ */
+export const getNodePath: (node: Node) => JSONPath = parser.getNodePath;
+
+/**
  * Evaluates the JavaScript object of the given JSON DOM node 
  */
 export const getNodeValue: (node: Node) => any = parser.getNodeValue;
@@ -150,13 +160,13 @@ export const enum ParseErrorCode {
 export type NodeType = 'object' | 'array' | 'property' | 'string' | 'number' | 'boolean' | 'null';
 
 export interface Node {
-	type: NodeType;
-	value?: any;
-	offset: number;
-	length: number;
-	columnOffset?: number;
-	parent?: Node;
-	children?: Node[];
+	readonly type: NodeType;
+	readonly value?: any;
+	readonly offset: number;
+	readonly length: number;
+	readonly colonOffset?: number;
+	readonly parent?: Node;
+	readonly children?: Node[];
 }
 
 export type Segment = string | number;
