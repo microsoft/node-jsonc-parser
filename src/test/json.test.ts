@@ -214,6 +214,8 @@ suite('JSON', () => {
 		assertKinds('True', SyntaxKind.Unknown);
 		assertKinds('foo-bar', SyntaxKind.Unknown);
 		assertKinds('foo bar', SyntaxKind.Unknown, SyntaxKind.Trivia, SyntaxKind.Unknown);
+
+		assertKinds('false//hello', SyntaxKind.FalseKeyword, SyntaxKind.LineCommentTrivia);
 	});
 
 	test('trivia', () => {
