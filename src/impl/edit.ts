@@ -12,7 +12,8 @@ export function removeProperty(text: string, path: JSONPath, formattingOptions: 
 	return setProperty(text, path, void 0, formattingOptions);
 }
 
-export function setProperty(text: string, path: JSONPath, value: any, formattingOptions: FormattingOptions, getInsertionIndex?: (properties: string[]) => number): Edit[] {
+export function setProperty(text: string, originalPath: JSONPath, value: any, formattingOptions: FormattingOptions, getInsertionIndex?: (properties: string[]) => number): Edit[] {
+	let path = originalPath.slice()
 	let errors: ParseError[] = [];
 	let root = parseTree(text, errors);
 	let parent: Node | undefined = void 0;
