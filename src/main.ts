@@ -157,6 +157,28 @@ export const enum ParseErrorCode {
 	InvalidCharacter = 16
 }
 
+export function printParseErrorCode(code: ParseErrorCode) {
+	switch (code) {
+		case ParseErrorCode.InvalidSymbol: return 'InvalidSymbol'
+		case ParseErrorCode.InvalidNumberFormat: return 'InvalidNumberFormat';
+		case ParseErrorCode.PropertyNameExpected: return 'PropertyNameExpected';
+		case ParseErrorCode.ValueExpected: return 'ValueExpected';
+		case ParseErrorCode.ColonExpected: return 'ColonExpected';
+		case ParseErrorCode.CommaExpected: return 'CommaExpected';
+		case ParseErrorCode.CloseBraceExpected: return 'CloseBraceExpected';
+		case ParseErrorCode.CloseBracketExpected: return 'CloseBracketExpected';
+		case ParseErrorCode.EndOfFileExpected: return 'EndOfFileExpected';
+		case ParseErrorCode.InvalidCommentToken: return 'InvalidCommentToken';
+		case ParseErrorCode.UnexpectedEndOfComment: return 'UnexpectedEndOfComment';
+		case ParseErrorCode.UnexpectedEndOfString: return 'UnexpectedEndOfString';
+		case ParseErrorCode.UnexpectedEndOfNumber: return 'UnexpectedEndOfNumber';
+		case ParseErrorCode.InvalidUnicode: return 'InvalidUnicode';
+		case ParseErrorCode.InvalidEscapeCharacter: return 'InvalidEscapeCharacter';
+		case ParseErrorCode.InvalidCharacter: return 'InvalidCharacter';
+	}
+	return '<unknown ParseErrorCode>';
+}
+
 export type NodeType = 'object' | 'array' | 'property' | 'string' | 'number' | 'boolean' | 'null';
 
 export interface Node {
