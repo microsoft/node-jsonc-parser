@@ -258,11 +258,12 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 				if (text.charCodeAt(pos + 1) === CharacterCodes.asterisk) {
 					pos += 2;
 
+					let safeLength = len - 1; // For lookahead.
 					let commentClosed = false;
-					while (pos < len) {
+					while (pos < safeLength) {
 						let ch = text.charCodeAt(pos);
 
-						if (ch === CharacterCodes.asterisk && (pos + 1 < len) && text.charCodeAt(pos + 1) === CharacterCodes.slash) {
+						if (ch === CharacterCodes.asterisk && text.charCodeAt(pos + 1) === CharacterCodes.slash) {
 							pos += 2;
 							commentClosed = true;
 							break;
