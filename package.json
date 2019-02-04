@@ -1,6 +1,6 @@
 {
   "name": "jsonc-parser",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Scanner and parser for JSON with comments.",
   "main": "./lib/umd/main.js",
   "typings": "./lib/umd/main",
