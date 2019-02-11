@@ -66,7 +66,7 @@ export interface JSONScanner {
 	 */
 	getToken(): SyntaxKind;
 	/**
-	 * Returns the last read token value. The value for strings is the decoded string content. For numbers its of type number, for boolean it's true or false.
+	 * Returns the last read token value. The value for strings is the decoded string content. For numbers it's of type number, for boolean it's true or false.
 	 */
 	getTokenValue(): string;
 	/**
@@ -91,7 +91,7 @@ export const getLocation: (text: string, position: number) => Location = parser.
 
 /**
  * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
- * Therefore always check the errors list to find out if the input was valid.
+ * Therefore, always check the errors list to find out if the input was valid.
  */
 export const parse: (text: string, errors?: ParseError[], options?: ParseOptions) => any = parser.parse;
 
@@ -106,7 +106,7 @@ export const parseTree: (text: string, errors?: ParseError[], options?: ParseOpt
 export const findNodeAtLocation: (root: Node, path: JSONPath) => Node | undefined = parser.findNodeAtLocation;
 
 /**
- * Finds the most inner node at the given offset. If includeRightBound is set, also finds nodes that end at the given offset.
+ * Finds the innermost node at the given offset. If includeRightBound is set, also finds nodes that end at the given offset.
  */
 export const findNodeAtOffset: (root: Node, offset: number, includeRightBound?: boolean) => Node | undefined = parser.findNodeAtOffset;
 
@@ -200,14 +200,14 @@ export interface Location {
 	 */
 	previousNode?: Node;
 	/**
-	 * The path describing the location in the JSON document. The path consists of a sequence strings
+	 * The path describing the location in the JSON document. The path consists of a sequence of strings
 	 * representing an object property or numbers for array indices.
 	 */
 	path: JSONPath;
 	/**
 	 * Matches the locations path against a pattern consisting of strings (for properties) and numbers (for array indices).
-	 * '*' will match a single segment, of any property name or index.
-	 * '**' will match a sequece of segments or no segment, of any property name or index.
+	 * '*' will match a single segment of any property name or index.
+	 * '**' will match a sequence of segments of any property name or index, or no segment.
 	 */
 	matches: (patterns: JSONPath) => boolean;
 	/**
@@ -302,7 +302,7 @@ export interface Range {
 
 export interface FormattingOptions {
 	/**
-	 * If indentation is based on spaces (`insertSpaces` = true), then what is the number of spaces that make an indent?
+	 * If indentation is based on spaces (`insertSpaces` = true), the number of spaces that make an indent.
 	 */
 	tabSize?: number;
 	/**
@@ -325,7 +325,7 @@ export interface FormattingOptions {
  * removals of text segments. All offsets refer to the original state of the document. No two edits must change or remove the same range of
  * text in the original document. However, multiple edits can have
  * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
- * To apply edits to an input, you can use `applyEdits`
+ * To apply edits to an input, you can use `applyEdits`.
  */
 export function format(documentText: string, range: Range | undefined, options: FormattingOptions): Edit[] {
 	return formatter.format(documentText, range, options);
@@ -340,7 +340,7 @@ export interface ModificationOptions {
 	*/
 	formattingOptions: FormattingOptions;
 	/**
-	 * Optional fucntion to define the insertion index given an existing list of properties.
+	 * Optional function to define the insertion index given an existing list of properties.
 	 */
 	getInsertionIndex?: (properties: string[]) => number;
 }
@@ -358,7 +358,7 @@ export interface ModificationOptions {
  * removals of text segments. All offsets refer to the original state of the document. No two edits must change or remove the same range of
  * text in the original document. However, multiple edits can have
  * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
- * To apply edits to an input, you can use `applyEdits`
+ * To apply edits to an input, you can use `applyEdits`.
  */
 export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): Edit[] {
 	return edit.setProperty(text, path, value, options.formattingOptions, options.getInsertionIndex);
