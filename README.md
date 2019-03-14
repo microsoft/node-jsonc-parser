@@ -68,6 +68,14 @@ export interface JSONScanner {
      * The length of the last read token.
      */
     getTokenLength(): number;
+	/**
+	 * The zero-based start line number of the last read token.
+	 */
+	getTokenLine(): number;
+	/**
+	 * The zero-based character (start column) of the last read token.
+	 */
+	getTokenCharacter(): number;
     /**
      * An error code of the last scan.
      */
@@ -93,42 +101,42 @@ export declare function parse(text: string, errors?: {error: ParseErrorCode;}[],
 export declare function visit(text: string, visitor: JSONVisitor, options?: ParseOptions): any;
 
 export interface JSONVisitor {
-    /**
-     * Invoked when an open brace is encountered and an object is started. The offset and length represent the location of the open brace.
-     */
-    onObjectBegin?: (offset: number, length: number) => void;
-    /**
-     * Invoked when a property is encountered. The offset and length represent the location of the property name.
-     */
-    onObjectProperty?: (property: string, offset: number, length: number) => void;
-    /**
-     * Invoked when a closing brace is encountered and an object is completed. The offset and length represent the location of the closing brace.
-     */
-    onObjectEnd?: (offset: number, length: number) => void;
-    /**
-     * Invoked when an open bracket is encountered. The offset and length represent the location of the open bracket.
-     */
-    onArrayBegin?: (offset: number, length: number) => void;
-    /**
-     * Invoked when a closing bracket is encountered. The offset and length represent the location of the closing bracket.
-     */
-    onArrayEnd?: (offset: number, length: number) => void;
-    /**
-     * Invoked when a literal value is encountered. The offset and length represent the location of the literal value.
-     */
-    onLiteralValue?: (value: any, offset: number, length: number) => void;
-    /**
-     * Invoked when a comma or colon separator is encountered. The offset and length represent the location of the separator.
-     */
-    onSeparator?: (charcter: string, offset: number, length: number) => void;
+	/**
+	 * Invoked when an open brace is encountered and an object is started. The offset and length represent the location of the open brace.
+	 */
+	onObjectBegin?: (offset: number, length: number, startLine: number, startCharacter: number) => void;
+	/**
+	 * Invoked when a property is encountered. The offset and length represent the location of the property name.
+	 */
+	onObjectProperty?: (property: string, offset: number, length: number, startLine: number, startCharacter: number) => void;
+	/**
+	 * Invoked when a closing brace is encountered and an object is completed. The offset and length represent the location of the closing brace.
+	 */
+	onObjectEnd?: (offset: number, length: number, startLine: number, startCharacter: number) => void;
+	/**
+	 * Invoked when an open bracket is encountered. The offset and length represent the location of the open bracket.
+	 */
+	onArrayBegin?: (offset: number, length: number, startLine: number, startCharacter: number) => void;
+	/**
+	 * Invoked when a closing bracket is encountered. The offset and length represent the location of the closing bracket.
+	 */
+	onArrayEnd?: (offset: number, length: number, startLine: number, startCharacter: number) => void;
+	/**
+	 * Invoked when a literal value is encountered. The offset and length represent the location of the literal value.
+	 */
+	onLiteralValue?: (value: any, offset: number, length: number, startLine: number, startCharacter: number) => void;
+	/**
+	 * Invoked when a comma or colon separator is encountered. The offset and length represent the location of the separator.
+	 */
+	onSeparator?: (character: string, offset: number, length: number, startLine: number, startCharacter: number) => void;
 	/**
 	 * When comments are allowed, invoked when a line or block comment is encountered. The offset and length represent the location of the comment.
 	 */
-	onComment?: (offset: number, length: number) => void;    
-    /**
-     * Invoked on an error.
-     */
-    onError?: (error: ParseErrorCode, offset: number, length: number) => void;
+	onComment?: (offset: number, length: number, startLine: number, startCharacter: number) => void;
+	/**
+	 * Invoked on an error.
+	 */
+	onError?: (error: ParseErrorCode, offset: number, length: number, startLine: number, startCharacter: number) => void;
 }
 
 /**
