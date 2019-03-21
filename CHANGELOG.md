@@ -4,6 +4,10 @@
  - new API getNodePath: Gets the JSON path of the given JSON DOM node
  - new API findNodeAtOffset: Finds the most inner node at the given offset. If includeRightBound is set, also finds nodes that end at the given offset.
 
+2.0.4 next
+==================
+- `JSONScanner` and `JSONVisiator` return lineNumber / character.
+
 1.0.3 2018-03-07
 ==================
  - provide ems modules
