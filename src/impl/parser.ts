@@ -386,10 +386,10 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 	let _scanner = createScanner(text, false);
 
 	function toNoArgVisit(visitFunction?: (offset: number, length: number, startLine: number, startCharacter: number) => void): () => void {
-		return visitFunction ? () => visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenLine(), _scanner.getTokenCharacter()) : () => true;
+		return visitFunction ? () => visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
 	}
 	function toOneArgVisit<T>(visitFunction?: (arg: T, offset: number, length: number, startLine: number, startCharacter: number) => void): (arg: T) => void {
-		return visitFunction ? (arg: T) => visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenLine(), _scanner.getTokenCharacter()) : () => true;
+		return visitFunction ? (arg: T) => visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
 	}
 
 	let onObjectBegin = toNoArgVisit(visitor.onObjectBegin),

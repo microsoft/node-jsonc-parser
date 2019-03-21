@@ -80,11 +80,11 @@ export interface JSONScanner {
 	/**
 	 * The zero-based start line number of the last read token.
 	 */
-	getTokenLine(): number;
+	getTokenStartLine(): number;
 	/**
-	 * The zero-based character (start column) of the last read token.
+	 * The zero-based start character (column) of the last read token.
 	 */
-	getTokenCharacter(): number;
+	getTokenStartCharacter(): number;
 	/**
 	 * An error code of the last scan.
 	 */

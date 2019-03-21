@@ -18,9 +18,9 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 		tokenOffset = 0,
 		token: SyntaxKind = SyntaxKind.Unknown,
 		lineNumber = 0,
-		tokenLineNumber = 0,
-		lineEndOffset = 0,
-		prevLineEndOffset = 0,
+		lineStartOffset = 0,
+		tokenLineStartOffset = 0,
+		prevTokenLineStartOffset = 0,
 		scanError: ScanError = ScanError.None;
 
 	function scanHexDigits(count: number, exact?: boolean): number {
@@ -183,8 +183,8 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 		scanError = ScanError.None;
 
 		tokenOffset = pos;
-		tokenLineNumber = lineNumber;
-		prevLineEndOffset = lineEndOffset;
+		lineStartOffset = lineNumber;
+		prevTokenLineStartOffset = tokenLineStartOffset;
 
 		if (pos >= len) {
 			// at the end
@@ -213,7 +213,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 				value += '\n';
 			}
 			lineNumber++;
-			lineEndOffset = pos;
+			tokenLineStartOffset = pos;
 			return token = SyntaxKind.LineBreakTrivia;
 		}
 
@@ -285,7 +285,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 							}
 
 							lineNumber++;
-							lineEndOffset = pos;
+							tokenLineStartOffset = pos;
 						}
 					}
 					
@@ -383,8 +383,8 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 		getTokenValue: () => value,
 		getTokenOffset: () => tokenOffset,
 		getTokenLength: () => pos - tokenOffset,
-		getTokenLine: () => tokenLineNumber,
-		getTokenCharacter: () => tokenOffset - prevLineEndOffset,
+		getTokenStartLine: () => lineStartOffset,
+		getTokenStartCharacter: () => tokenOffset - prevTokenLineStartOffset,
 		getTokenError: () => scanError,
 	};
 }
