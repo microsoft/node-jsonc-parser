@@ -90,7 +90,7 @@ export interface ParseOptions {
     disallowComments?: boolean;
 }
 /**
- * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault lolerant as possible, but still return a result.
+ * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
  * Therefore always check the errors list to find out if the input was valid.
  */
 export declare function parse(text: string, errors?: {error: ParseErrorCode;}[], options?: ParseOptions): any;
