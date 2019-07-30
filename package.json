@@ -15,11 +15,11 @@
     "url": "https://github.com/Microsoft/node-jsonc-parser/issues"
   },
   "devDependencies": {
-    "mocha": "^6.0.2",
-    "typescript": "^3.3.4000",
-    "@types/node": "^7.0.43",
-    "@types/mocha": "^2.2.32",
-    "tslint": "^5.14.0",
+    "mocha": "^6.2.0",
+    "typescript": "^3.5.3",
+    "@types/node": "^10.12.12",
+    "@types/mocha": "^5.2.7",
+    "tslint": "^5.18.0",
     "rimraf": "^2.6.3"
   },
   "scripts": {
