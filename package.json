@@ -19,8 +19,8 @@
     "typescript": "^3.5.3",
     "@types/node": "^10.12.12",
     "@types/mocha": "^5.2.7",
-    "tslint": "^5.18.0",
-    "rimraf": "^2.6.3"
+    "tslint": "^5.19.0",
+    "rimraf": "^3.0.0"
   },
   "scripts": {
     "prepublishOnly": "npm run clean && npm run compile-esm && npm run test",
