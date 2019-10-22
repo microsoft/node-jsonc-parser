@@ -262,6 +262,7 @@ suite('JSON', () => {
 		assertValidParse('{ "hello": [], "world": {} }', { hello: [], world: {} });
 		assertValidParse('{ "hello": { "again": { "inside": 5 }, "world": 1 }}', { hello: { again: { inside: 5 }, world: 1 } });
 		assertValidParse('{ "foo": /*hello*/true }', { foo: true });
+		assertValidParse('{ "": true }', { '': true });
 	});
 
 	test('parse: arrays', () => {
