@@ -1,3 +1,8 @@
+2.1.2 2019-10-22
+==================
+- parse: Report error for empty content
+- parse: Fix issue with empty property name
+
 2.1.0 2019-03-29
 ==================
 - `JSONScanner` and `JSONVisitor` return lineNumber / character.

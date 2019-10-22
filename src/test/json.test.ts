@@ -289,6 +289,11 @@ suite('JSON', () => {
 		assertInvalidParse('[ ,1, 2, 3, ]', [1, 2, 3]);
 	});
 
+	test('parse: errors', () => {
+		assertInvalidParse('', undefined);
+		assertInvalidParse('1,1', 1);
+	});
+
 	test('parse: disallow comments', () => {
 		let options = { disallowComments: true };
 

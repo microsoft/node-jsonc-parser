@@ -202,6 +202,9 @@ export function parse(text: string, errors: ParseError[] = [], options: ParseOpt
 		}
 	};
 	visit(text, visitor, options);
+	if (currentParent.length === 0) {
+		errors.push({ error: ParseErrorCode.ValueExpected, offset: 0, length: 0 });
+	}
 	return currentParent[0];
 }
 
