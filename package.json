@@ -23,10 +23,11 @@
     "rimraf": "^3.0.0"
   },
   "scripts": {
-    "prepublishOnly": "npm run clean && npm run compile-esm && npm run test",
+    "prepublishOnly": "npm run clean && npm run compile-esm && npm run test && npm run remove-sourcemap-refs",
     "postpublish": "node ./build/post-publish.js",
     "compile": "tsc -p ./src",
     "compile-esm": "tsc -p ./src/tsconfig.esm.json",
+    "remove-sourcemap-refs": "node ./build/remove-sourcemap-refs.js",
     "clean": "rimraf lib",
     "watch": "tsc -w -p ./src",
     "test": "npm run compile && mocha",
