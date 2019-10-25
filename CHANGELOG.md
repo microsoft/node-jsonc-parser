@@ -1,32 +1,33 @@
-2.1.2 2019-10-22
+2.2.0 2019-10-25
 ==================
-- parse: Report error for empty content
-- parse: Fix issue with empty property name
+ * added *ParseOptions.allowTrailingComma*. Default is `false`.
+ * New API *getNodeType*: Returns the type of a value returned by parse.
+ * parse: Fix issue with empty property name
 
 2.1.0 2019-03-29
 ==================
-- `JSONScanner` and `JSONVisitor` return lineNumber / character.
+ * `JSONScanner` and `JSONVisitor` return lineNumber / character.
 
 2.0.0 2018-04-12
 ==================
- - renamed Node.columnOffset to Node.colonOffset
- - new API getNodePath: Gets the JSON path of the given JSON DOM node
- - new API findNodeAtOffset: Finds the most inner node at the given offset. If includeRightBound is set, also finds nodes that end at the given offset.
+  * renamed Node.columnOffset to Node.colonOffset
+  * new API getNodePath: Gets the JSON path of the given JSON DOM node
+  * new API findNodeAtOffset: Finds the most inner node at the given offset. If includeRightBound is set, also finds nodes that end at the given offset.
 
 1.0.3 2018-03-07
 ==================
- - provide ems modules
+  * provide ems modules
 
 1.0.2 2018-03-05
 ==================
- - added the *visit.onComment* API, reported when comments are allowed.
- - added the *ParseErrorCode.InvalidCommentToken* enum value, reported when comments are disallowed.
+  * added the *visit.onComment* API, reported when comments are allowed.
+  * added the *ParseErrorCode.InvalidCommentToken* enum value, reported when comments are disallowed.
 
 1.0.1
 ==================
- - added the *format* API: computes edits to format a JSON document.
- - added the *modify* API: computes edits to insert, remove or replace a property or value in a JSON document.
- - added the *allyEdits* API: applies edits to a document
+  * added the *format* API: computes edits to format a JSON document.
+  * added the *modify* API: computes edits to insert, remove or replace a property or value in a JSON document.
+  * added the *allyEdits* API: applies edits to a document
 
 1.0.0
 ==================
