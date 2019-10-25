@@ -166,10 +166,20 @@ suite('JSON', () => {
 		assertKinds('"\u88ff"', SyntaxKind.StringLiteral);
 		assertKinds('"​\u2028"', SyntaxKind.StringLiteral);
 		assertScanError('"\\v"', ScanError.InvalidEscapeCharacter, SyntaxKind.StringLiteral);
+		assertKinds('""""""', SyntaxKind.StringLiteral);
+		assertKinds('"""test"""', SyntaxKind.StringLiteral);
+		assertKinds('"""\nt\ne\ns\nt\n"""', SyntaxKind.StringLiteral);
+		assertKinds('"""\r\nt\r\ne\r\ns\r\nt\r\n"""', SyntaxKind.StringLiteral);
+		assertKinds('"""\\\nt\ne\ns\nt\n"""', SyntaxKind.StringLiteral);
+		assertKinds('"""\\\r\nt\r\ne\r\ns\r\nt\r\n"""', SyntaxKind.StringLiteral);
 
 		// unexpected end
 		assertScanError('"test', ScanError.UnexpectedEndOfString, SyntaxKind.StringLiteral);
 		assertScanError('"test\n"', ScanError.UnexpectedEndOfString, SyntaxKind.StringLiteral, SyntaxKind.LineBreakTrivia, SyntaxKind.StringLiteral);
+		assertScanError('"""test', ScanError.UnexpectedEndOfString, SyntaxKind.StringLiteral);
+		assertScanError('"""test"', ScanError.UnexpectedEndOfString, SyntaxKind.StringLiteral);
+		assertScanError('"""test""', ScanError.UnexpectedEndOfString, SyntaxKind.StringLiteral);
+		assertScanError('"""test\\"""', ScanError.UnexpectedEndOfString, SyntaxKind.StringLiteral);
 
 		// invalid characters
 		assertScanError('"\t"', ScanError.InvalidCharacter, SyntaxKind.StringLiteral);
@@ -263,6 +273,8 @@ suite('JSON', () => {
 		assertValidParse('{ "hello": { "again": { "inside": 5 }, "world": 1 }}', { hello: { again: { inside: 5 }, world: 1 } });
 		assertValidParse('{ "foo": /*hello*/true }', { foo: true });
 		assertValidParse('{ "": true }', { '': true });
+		assertValidParse('{ "foo": """\nbar\n"""}', { foo: '\nbar\n' });
+		assertValidParse('{ "foo": """\\\nbar\\\n"""}', { foo: 'bar' });
 	});
 
 	test('parse: arrays', () => {

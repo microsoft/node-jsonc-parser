@@ -482,4 +482,55 @@ suite('JSON - formatter', () => {
 
 		format(content, expected);
 	});
+	test('multi line strings', () => {
+		var content = [
+			'{ "a"   :     """',
+			'foo',
+			'bar',
+			'""" }'
+		].join('\n');
+
+		var expected = [
+			'{',
+			'  "a": """',
+			'foo',
+			'bar',
+			'"""',
+			'}'
+		].join('\n');
+
+		format(content, expected);
+	});
+	test('multi line strings with existing indent', () => {
+		var content = [
+			'{ "a": 	"""',
+			'  foo',
+			'    bar',
+			'""" }'
+		].join('\n');
+		var expected = [
+			'{',
+			'  "a": """',
+			'  foo',
+			'    bar',
+			'"""',
+			'}'
+		].join('\n');
+		format(content, expected);
+	});
+	test('multi line strings with avoiding line break', () => {
+		var content = [
+			'{ "a" : """\\',
+			'foo\\',
+			'bar""" }'
+		].join('\n');
+		var expected = [
+			'{',
+			'  "a": """\\',
+			'foo\\',
+			'bar"""',
+			'}'
+		].join('\n');
+		format(content, expected);
+	});
 });

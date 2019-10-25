@@ -177,6 +177,105 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 		return result;
 	}
 
+	function scanBlockString(): string {
+		const safeLength = len-2; // For lookahead.
+		let result = '',
+			start = pos;
+		
+		while (true) {
+			if(pos >= safeLength) {
+				pos += 2;
+				result += text.substring(start, pos);
+				scanError = ScanError.UnexpectedEndOfString;
+				break;
+			}
+			const ch = text.charCodeAt(pos);
+			const dq = CharacterCodes.doubleQuote;
+			if (ch === dq && text.charCodeAt(pos+1) === dq && text.charCodeAt(pos+2) === dq) {
+				result += text.substring(start,pos);
+				pos += 3;
+				break;
+			}
+			if (ch === CharacterCodes.backslash) {
+				result += text.substring(start, pos);
+				pos++;
+				if (pos >= len) {
+					scanError = ScanError.UnexpectedEndOfString;
+					break;
+				}
+				const ch2 = text.charCodeAt(pos++);
+				// avoid line break
+				if(isLineBreak(ch2)) { 
+					if (ch2 === CharacterCodes.carriageReturn && text.charCodeAt(pos) === CharacterCodes.lineFeed) {
+						pos++;
+					}
+					lineNumber++;
+					tokenLineStartOffset = pos;
+					start = pos;
+					continue;
+				}
+
+				switch (ch2) {
+					case CharacterCodes.doubleQuote:
+						result += '\"';
+						break;
+					case CharacterCodes.backslash:
+						result += '\\';
+						break;
+					case CharacterCodes.slash:
+						result += '/';
+						break;
+					case CharacterCodes.b:
+						result += '\b';
+						break;
+					case CharacterCodes.f:
+						result += '\f';
+						break;
+					case CharacterCodes.n:
+						result += '\n';
+						break;
+					case CharacterCodes.r:
+						result += '\r';
+						break;
+					case CharacterCodes.t:
+						result += '\t';
+						break;
+					case CharacterCodes.u:
+						const ch3 = scanHexDigits(4, true);
+						if (ch3 >= 0) {
+							result += String.fromCharCode(ch3);
+						} else {
+							scanError = ScanError.InvalidUnicode;
+						}
+						break;
+					default:
+						scanError = ScanError.InvalidEscapeCharacter;
+				}
+				start = pos;
+				continue;
+			}
+			if (ch >= 0 && ch <= 0x1f) {
+				if (isLineBreak(ch)) {
+					result += text.substring(start, pos);
+					result += '\n';
+					pos++;
+					if(pos + 1 < safeLength && text.charCodeAt(pos) == CharacterCodes.carriageReturn && text.charCodeAt(pos+1) === CharacterCodes.lineFeed) {
+						pos++;
+					}
+					lineNumber++;
+					tokenLineStartOffset = pos;
+					start = pos;
+					continue;
+				} else {
+					scanError = ScanError.InvalidCharacter;
+					// mark as error but continue with string
+				}
+			}
+			pos++;
+		}
+		return result;
+	}
+
 	function scanNext(): SyntaxKind {
 
 		value = '';
@@ -240,6 +339,13 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 
 			// strings
 			case CharacterCodes.doubleQuote:
+				// Multi-line strings
+				if (pos+2 < len && text.charCodeAt(pos + 1) === CharacterCodes.doubleQuote && text.charCodeAt(pos + 2) === CharacterCodes.doubleQuote) {
+					pos += 3;
+					value = scanBlockString();
+					return token = SyntaxKind.StringLiteral;
+				}
+				// Single-line strings
 				pos++;
 				value = scanString();
 				return token = SyntaxKind.StringLiteral;
