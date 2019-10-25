@@ -8,11 +8,11 @@
   "author": "Microsoft Corporation",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Microsoft/node-jsonc-parser"
+    "url": "https://github.com/microsoft/node-jsonc-parser"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Microsoft/node-jsonc-parser/issues"
+    "url": "https://github.com/microsoft/node-jsonc-parser/issues"
   },
   "devDependencies": {
     "mocha": "^6.2.2",
