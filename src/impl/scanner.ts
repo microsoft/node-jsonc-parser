@@ -199,7 +199,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 			if (ch === CharacterCodes.backslash) {
 				result += text.substring(start, pos);
 				pos++;
-				if (pos >= len) {
+				if (pos >= safeLength) {
 					scanError = ScanError.UnexpectedEndOfString;
 					break;
 				}
@@ -259,7 +259,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 					result += text.substring(start, pos);
 					result += '\n';
 					pos++;
-					if(pos + 1 < safeLength && text.charCodeAt(pos) == CharacterCodes.carriageReturn && text.charCodeAt(pos+1) === CharacterCodes.lineFeed) {
+					if (ch == CharacterCodes.carriageReturn && text.charCodeAt(pos) === CharacterCodes.lineFeed) {
 						pos++;
 					}
 					lineNumber++;
