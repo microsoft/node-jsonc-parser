@@ -1,6 +1,6 @@
 2.2.0 2019-10-25
 ==================
- * added *ParseOptions.allowTrailingComma*. Default is `false`.
+ * added *ParseOptions.allowEmptyContent*. Default is `false`.
  * New API *getNodeType*: Returns the type of a value returned by parse.
  * parse: Fix issue with empty property name
 
