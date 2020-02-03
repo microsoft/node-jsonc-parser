@@ -233,6 +233,8 @@ export function parseTree(text: string, errors: ParseError[] = [], options: Pars
 			currentParent.children!.push({ type: 'string', value: name, offset, length, parent: currentParent });
 		},
 		onObjectEnd: (offset: number, length: number) => {
+			ensurePropertyComplete(offset + length); // in case of a missing value for a property: make sure property is complete
+
 			currentParent.length = offset + length - currentParent.offset;
 			currentParent = currentParent.parent!;
 			ensurePropertyComplete(offset + length);

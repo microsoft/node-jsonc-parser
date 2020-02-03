@@ -64,7 +64,7 @@ function assertTree(input: string, expected: any, expectedErrors: ParseError[] =
 	};
 	checkParent(actual);
 
-	assert.deepEqual(actual, expected);
+	assert.deepEqual(actual, expected, JSON.stringify(actual));
 }
 
 interface VisitorCallback {
@@ -97,10 +97,10 @@ function assertVisit(input: string, expected: VisitorCallback[], expectedErrors:
 			errors.push({ error, offset, length, startLine, startCharacter })
 		}
 	}, {
-			disallowComments
-		});
+		disallowComments
+	});
 	assert.deepEqual(errors, expectedErrors);
-	assert.deepEqual(actuals, expected);
+	assert.deepEqual(actuals, expected, JSON.stringify(actuals));
 }
 
 function assertNodeAtLocation(input: Node, segments: Segment[], expected: any) {
@@ -428,9 +428,9 @@ suite('JSON', () => {
 					}
 				]
 			}, [
-				{ error: ParseErrorCode.PropertyNameExpected, offset: 26, length: 1 },
-				{ error: ParseErrorCode.ValueExpected, offset: 26, length: 1 }
-			]);
+			{ error: ParseErrorCode.PropertyNameExpected, offset: 26, length: 1 },
+			{ error: ParseErrorCode.ValueExpected, offset: 26, length: 1 }
+		]);
 	});
 
 	test('visit: object', () => {
@@ -484,8 +484,8 @@ suite('JSON', () => {
 			{ id: 'onObjectProperty', text: '"foo"', startLine: 0, startCharacter: 10, arg: 'foo' },
 			{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 15, arg: ':' },
 			{ id: 'onComment', text: '//f', startLine: 0, startCharacter: 17 },
-			{ id: 'onLiteralValue', text: '"bar"',  startLine: 1, startCharacter: 0, arg: 'bar' },
-			{ id: 'onObjectEnd', text: '}',  startLine: 1, startCharacter: 6 },
+			{ id: 'onLiteralValue', text: '"bar"', startLine: 1, startCharacter: 0, arg: 'bar' },
+			{ id: 'onObjectEnd', text: '}', startLine: 1, startCharacter: 6 },
 		]);
 		assertVisit('/* g\r\n */ { "foo": //f\n"bar" }', [
 			{ id: 'onComment', text: '/* g\r\n */', startLine: 0, startCharacter: 0 },
@@ -509,6 +509,69 @@ suite('JSON', () => {
 				{ error: ParseErrorCode.InvalidCommentToken, offset: 18, length: 3, startLine: 1, startCharacter: 13 },
 			],
 			true);
+	});
+
+	test('visit: incomplete', () => {
+		assertVisit('{"prop1":"foo","prop2":"foo2","prop3":{"prp1":{""}}}', [
+			{ id: 'onObjectBegin', text: "{", startLine: 0, startCharacter: 0 },
+			{ id: 'onObjectProperty', text: '"prop1"', startLine: 0, startCharacter: 1, arg: "prop1" },
+			{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 8, arg: ":" },
+			{ id: 'onLiteralValue', text: '"foo"', startLine: 0, startCharacter: 9, arg: "foo" },
+			{ id: 'onSeparator', text: ",", startLine: 0, startCharacter: 14, arg: "," },
+			{ id: 'onObjectProperty', text: '"prop2"', startLine: 0, startCharacter: 15, arg: "prop2" },
+			{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 22, arg: ":" },
+			{ id: 'onLiteralValue', text: '"foo2"', startLine: 0, startCharacter: 23, arg: "foo2" },
+			{ id: 'onSeparator', text: ",", startLine: 0, startCharacter: 29, arg: "," },
+			{ id: 'onObjectProperty', text: '"prop3"', startLine: 0, startCharacter: 30, arg: "prop3" },
+			{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 37, arg: ":" },
+			{ id: 'onObjectBegin', text: "{", startLine: 0, startCharacter: 38 },
+			{ id: 'onObjectProperty', text: '"prp1"', startLine: 0, startCharacter: 39, arg: "prp1" },
+			{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 45, arg: ":" },
+			{ id: 'onObjectBegin', text: "{", startLine: 0, startCharacter: 46 },
+			{ id: 'onObjectProperty', text: '""', startLine: 0, startCharacter: 47, arg: "" },
+			{ id: 'onObjectEnd', text: "}", startLine: 0, startCharacter: 49 },
+			{ id: 'onObjectEnd', text: "}", startLine: 0, startCharacter: 50 },
+			{ id: 'onObjectEnd', text: "}", startLine: 0, startCharacter: 51 }
+		], [{ error: ParseErrorCode.ColonExpected, offset: 49, length: 1, startLine: 0, startCharacter: 49 }]);
+
+		assertTree('{"prop1":"foo","prop2":"foo2","prop3":{"prp1":{""}}}', {
+			type: 'object', offset: 0, length: 52, children: [
+				{
+					type: 'property', offset: 1, length: 13, children: [
+						{ type: 'string', value: 'prop1', offset: 1, length: 7 },
+						{ type: 'string', offset: 9, length: 5, value: 'foo' }
+					], colonOffset: 8
+				}, {
+					type: 'property', offset: 15, length: 14, children: [
+						{ type: 'string', value: 'prop2', offset: 15, length: 7 },
+						{ type: 'string', offset: 23, length: 6, value: 'foo2' }
+					], colonOffset: 22
+				},
+				{
+					type: 'property', offset: 30, length: 21, children: [
+						{ type: 'string', value: 'prop3', offset: 30, length: 7 },
+						{
+							type: 'object', offset: 38, length: 13, children: [
+								{
+									type: 'property', offset: 39, length: 11, children: [
+										{ type: 'string', value: 'prp1', offset: 39, length: 6 },
+										{
+											type: 'object', offset: 46, length: 4, children: [
+												{
+													type: 'property', offset: 47, length: 3, children: [
+														{ type: 'string', value: '', offset: 47, length: 2 },
+													]
+												}
+											]
+										}
+									], colonOffset: 45
+								}
+							]
+						}
+					], colonOffset: 37
+				}
+			]
+		}, [{ error: ParseErrorCode.ColonExpected, offset: 49, length: 1 }])
 	});
 
 	test('tree: find location', () => {
