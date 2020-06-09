@@ -121,6 +121,27 @@ suite('JSON - edits', () => {
 		assertEdit(content, edits, '{\n  "x": "y"\n}');
 	});
 
+	test('set item', () => {
+		let content = '{\n  "x": [1, 2, 3],\n  "y": 0\n}'
+
+		let edits = setProperty(content, ['x', 0], 6, formatterOptions);
+		assertEdit(content, edits, '{\n  "x": [6, 2, 3],\n  "y": 0\n}');
+
+		edits = setProperty(content, ['x', 1], 5, formatterOptions);
+		assertEdit(content, edits, '{\n  "x": [1, 5, 3],\n  "y": 0\n}');
+
+		edits = setProperty(content, ['x', 2], 4, formatterOptions);
+		assertEdit(content, edits, '{\n  "x": [1, 2, 4],\n  "y": 0\n}');
+
+		let message = "allowed setProperty to set array item outside of bounds";
+		try {
+			setProperty(content, ['x', 3], 3, formatterOptions)
+			throw new Error(message);
+		} catch(e) {
+			assert(e && e.message !== message);
+		}
+	});
+
 	test('insert item to empty array', () => {
 		let content = '[\n]';
 		let edits = setProperty(content, [-1], 'bar', formatterOptions);
@@ -163,4 +184,13 @@ suite('JSON - edits', () => {
 		assertEdit(content, edits, '// This is a comment\n[\n  1,\n  "foo"\n]');
 	});
 
+	test('set property w/ in-place formatting options', () => {
+		let content = '{\n  "x": [1, 2, 3],\n  "y": 0\n}'
+
+		let edits = setProperty(content, ['x', 0], { a: 1, b: 2 }, formatterOptions);
+		assertEdit(content, edits, '{\n  "x": [{\n      "a": 1,\n      "b": 2\n    }, 2, 3],\n  "y": 0\n}');
+
+		edits = setProperty(content, ['x', 0], { a: 1, b: 2 }, { ...formatterOptions, inPlace: true });
+		assertEdit(content, edits, '{\n  "x": [{"a":1,"b":2}, 2, 3],\n  "y": 0\n}');
+	});
 });

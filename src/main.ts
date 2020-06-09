@@ -322,6 +322,11 @@ export interface FormattingOptions {
 	 * The default 'end of line' character. If not set, '\n' is used as default.
 	 */
 	eol?: string;
+	/**
+	 * If true, changes within {@function format} will not be formatted and their original formatting will be preserved.
+	 * Useful for cutting down on computational time for large files.
+	 */
+	inPlace?: boolean;
 }
 
 /**
