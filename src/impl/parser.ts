@@ -483,18 +483,11 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 		switch (_scanner.getToken()) {
 			case SyntaxKind.NumericLiteral:
 				const tokenValue = _scanner.getTokenValue();
-				let value = parseFloat(tokenValue);
+				let value = Number(tokenValue);
 
 				if (isNaN(value)) {
-					try {
-						value = JSON.parse(tokenValue);
-						if (typeof value !== 'number') {
-							handleError(ParseErrorCode.InvalidNumberFormat);
-							value = 0;
-						}
-					} catch (e) {
-						handleError(ParseErrorCode.InvalidNumberFormat);
-					}
+					handleError(ParseErrorCode.InvalidNumberFormat);
+					value = 0;
 				}
 
 				onLiteralValue(value);
