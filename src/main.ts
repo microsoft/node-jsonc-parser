@@ -354,6 +354,11 @@ export interface ModificationOptions {
 	*/
 	formattingOptions: FormattingOptions;
 	/**
+	 * Default false. If `JSONPath` refers to an index of an array and {@property isArrayInsertion} is `true`, then
+	 * {@function modify} will insert a new item at that location instead of overwriting its contents.
+	 */
+	isArrayInsertion?: boolean;
+	/**
 	 * Optional function to define the insertion index given an existing list of properties.
 	 */
 	getInsertionIndex?: (properties: string[]) => number;
@@ -375,7 +380,7 @@ export interface ModificationOptions {
  * To apply edits to an input, you can use `applyEdits`.
  */
 export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): Edit[] {
-	return edit.setProperty(text, path, value, options.formattingOptions, options.getInsertionIndex);
+	return edit.setProperty(text, path, value, options.formattingOptions, options.getInsertionIndex, options.isArrayInsertion);
 }
 
 /**

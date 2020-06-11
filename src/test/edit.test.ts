@@ -133,22 +133,47 @@ suite('JSON - edits', () => {
 		edits = setProperty(content, ['x', 2], 4, formatterOptions);
 		assertEdit(content, edits, '{\n  "x": [1, 2, 4],\n  "y": 0\n}');
 
-		let message = "allowed setProperty to set array item outside of bounds";
-		try {
-			setProperty(content, ['x', 3], 3, formatterOptions)
-			throw new Error(message);
-		} catch(e) {
-			assert(e && e.message !== message);
-		}
+		edits = setProperty(content, ['x', 3], 3, formatterOptions)
+		assertEdit(content, edits, '{\n  "x": [\n    1,\n    2,\n    3,\n    3\n  ],\n  "y": 0\n}');
 	});
 
-	test('insert item to empty array', () => {
+	test('insert item at 0; isArrayInsertion = true', () => {
+		let content = '[\n  2,\n  3\n]';
+		let edits = setProperty(content, [0], 1, formatterOptions, undefined, true);
+		assertEdit(content, edits, '[\n  1,\n  2,\n  3\n]');
+	});
+
+	test('insert item at 0 in empty array', () => {
+		let content = '[\n]';
+		let edits = setProperty(content, [0], 1, formatterOptions);
+		assertEdit(content, edits, '[\n  1\n]');
+	});
+
+	test('insert item at an index; isArrayInsertion = true', () => {
+		let content = '[\n  1,\n  3\n]';
+		let edits = setProperty(content, [1], 2, formatterOptions, undefined, true);
+		assertEdit(content, edits, '[\n  1,\n  2,\n  3\n]');
+	});
+
+	test('insert item at an index in empty array', () => {
+		let content = '[\n]';
+		let edits = setProperty(content, [1], 1, formatterOptions);
+		assertEdit(content, edits, '[\n  1\n]');
+	});
+
+	test('insert item at end index', () => {
+		let content = '[\n  1,\n  2\n]';
+		let edits = setProperty(content, [2], 3, formatterOptions);
+		assertEdit(content, edits, '[\n  1,\n  2,\n  3\n]');
+	});
+
+	test('insert item at end to empty array', () => {
 		let content = '[\n]';
 		let edits = setProperty(content, [-1], 'bar', formatterOptions);
 		assertEdit(content, edits, '[\n  "bar"\n]');
 	});
 
-	test('insert item', () => {
+	test('insert item at end', () => {
 		let content = '[\n  1,\n  2\n]';
 		let edits = setProperty(content, [-1], 'bar', formatterOptions);
 		assertEdit(content, edits, '[\n  1,\n  2,\n  "bar"\n]');
