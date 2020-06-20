@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import { Range, FormattingOptions, Edit, SyntaxKind, ScanError} from '../main';
-import { createScanner } from './scanner';
+import { Range, FormattingOptions, Edit, SyntaxKind, ScanError} from '../main.js';
+import { createScanner } from './scanner.js';
 
 export function format(documentText: string, range: Range | undefined, options: FormattingOptions): Edit[] {
 	let initialIndentLevel: number;
