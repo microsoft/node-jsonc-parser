@@ -12,7 +12,7 @@ export function removeProperty(text: string, path: JSONPath, formattingOptions: 
 	return setProperty(text, path, void 0, formattingOptions);
 }
 
-export function setProperty(text: string, originalPath: JSONPath, value: any, formattingOptions: FormattingOptions, getInsertionIndex?: (properties: string[]) => number): Edit[] {
+export function setProperty(text: string, originalPath: JSONPath, value: any, formattingOptions: FormattingOptions, getInsertionIndex?: (properties: string[]) => number, isArrayInsertion: boolean = false): Edit[] {
 	let path = originalPath.slice()
 	let errors: ParseError[] = [];
 	let root = parseTree(text, errors);
@@ -96,28 +96,43 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, fo
 				edit = { offset: previous.offset + previous.length, length: 0, content: ',' + newProperty };
 			}
 			return withFormatting(text, edit, formattingOptions);
-		} else {
-			if (value === void 0 && parent.children.length >= 0) {
-				//Removal
-				let removalIndex = lastSegment;
-				let toRemove = parent.children[removalIndex];
-				let edit: Edit;
-				if (parent.children.length === 1) {
-					// only item
-					edit = { offset: parent.offset + 1, length: parent.length - 2, content: '' };
-				} else if (parent.children.length - 1 === removalIndex) {
-					// last item
-					let previous = parent.children[removalIndex - 1];
-					let offset = previous.offset + previous.length;
-					let parentEndOffset = parent.offset + parent.length;
-					edit = { offset, length: parentEndOffset - 2 - offset, content: '' };
-				} else {
-					edit = { offset: toRemove.offset, length: parent.children[removalIndex + 1].offset - toRemove.offset, content: '' };
-				}
-				return withFormatting(text, edit, formattingOptions);
+		} else if (value === void 0 && parent.children.length >= 0) {
+			// Removal
+			let removalIndex = lastSegment;
+			let toRemove = parent.children[removalIndex];
+			let edit: Edit;
+			if (parent.children.length === 1) {
+				// only item
+				edit = { offset: parent.offset + 1, length: parent.length - 2, content: '' };
+			} else if (parent.children.length - 1 === removalIndex) {
+				// last item
+				let previous = parent.children[removalIndex - 1];
+				let offset = previous.offset + previous.length;
+				let parentEndOffset = parent.offset + parent.length;
+				edit = { offset, length: parentEndOffset - 2 - offset, content: '' };
 			} else {
-				throw new Error('Array modification not supported yet');
+				edit = { offset: toRemove.offset, length: parent.children[removalIndex + 1].offset - toRemove.offset, content: '' };
 			}
+			return withFormatting(text, edit, formattingOptions);
+		} else if (value !== void 0) {
+			let edit: Edit;
+			const newProperty = `${JSON.stringify(value)}`;
+
+			if (!isArrayInsertion && parent.children.length > lastSegment) {
+				let toModify = parent.children[lastSegment];
+
+				edit = { offset: toModify.offset, length: toModify.length, content: newProperty }
+			} else if (parent.children.length === 0 || lastSegment === 0) {
+					edit = { offset: parent.offset + 1, length: 0, content: parent.children.length === 0 ? newProperty : newProperty + ',' };
+			} else {
+				const index = lastSegment > parent.children.length ? parent.children.length : lastSegment;
+				const previous = parent.children[index - 1];
+				edit = { offset: previous.offset + previous.length, length: 0, content: ',' + newProperty };
+			}
+
+			return withFormatting(text, edit, formattingOptions);
+		} else {
+			throw new Error(`Can not ${value === void 0 ? 'remove' : (isArrayInsertion ? 'insert' : 'modify')} Array index ${insertIndex} as length is not sufficient`);
 		}
 	} else {
 		throw new Error(`Can not add ${typeof lastSegment !== 'number' ? 'index' : 'property'} to parent of type ${parent.type}`);
@@ -125,6 +140,9 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, fo
 }
 
 function withFormatting(text: string, edit: Edit, formattingOptions: FormattingOptions): Edit[] {
+	if (formattingOptions.inPlace) {
+		return [{ ...edit }]
+	}
 	// apply the edit
 	let newText = applyEdit(text, edit);
 
