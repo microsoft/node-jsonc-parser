@@ -1,7 +1,7 @@
 2.3.0 2020-07-03
 ==================
   * new API `ModificationOptions.isArrayInsertion`: If `JSONPath` refers to an index of an array and `isArrayInsertion` is `true`, then `modify` will insert a new item at that location instead of overwriting its contents.
-  * `ModificationOptions.formattingOptions` is now optional. If not set, newly inserted content will be not be formatted.
+  * `ModificationOptions.formattingOptions` is now optional. If not set, newly inserted content will not be formatted.
 
 
 2.2.0 2019-10-25
