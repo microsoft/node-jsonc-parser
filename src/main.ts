@@ -167,8 +167,7 @@ export const enum ParseErrorCode {
 
 export function printParseErrorCode(code: ParseErrorCode) {
 	switch (code) {
-		case ParseErrorCode.InvalidSymbol: return 'InvalidSymbol'
-		case ParseErrorCode.InvalidNumberFormat: return 'InvalidNumberFormat';
+		case ParseErrorCode.InvalidSymbol: return 'InvalidSymbol';		case ParseErrorCode.InvalidNumberFormat: return 'InvalidNumberFormat';
 		case ParseErrorCode.PropertyNameExpected: return 'PropertyNameExpected';
 		case ParseErrorCode.ValueExpected: return 'ValueExpected';
 		case ParseErrorCode.ColonExpected: return 'ColonExpected';

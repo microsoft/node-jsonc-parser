@@ -13,7 +13,7 @@ export function removeProperty(text: string, path: JSONPath, options: Modificati
 }
 
 export function setProperty(text: string, originalPath: JSONPath, value: any, options: ModificationOptions): Edit[] {
-	let path = originalPath.slice()
+	let path = originalPath.slice();
 	let errors: ParseError[] = [];
 	let root = parseTree(text, errors);
 	let parent: Node | undefined = void 0;
@@ -121,7 +121,7 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, op
 			if (!options.isArrayInsertion && parent.children.length > lastSegment) {
 				let toModify = parent.children[lastSegment];
 
-				edit = { offset: toModify.offset, length: toModify.length, content: newProperty }
+				edit = { offset: toModify.offset, length: toModify.length, content: newProperty };
 			} else if (parent.children.length === 0 || lastSegment === 0) {
 					edit = { offset: parent.offset + 1, length: 0, content: parent.children.length === 0 ? newProperty : newProperty + ',' };
 			} else {
@@ -141,7 +141,7 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, op
 
 function withFormatting(text: string, edit: Edit, options: ModificationOptions): Edit[] {
 	if (!options.formattingOptions) {
-		return [edit]
+		return [edit];
 	}
 	// apply the edit
 	let newText = applyEdit(text, edit);

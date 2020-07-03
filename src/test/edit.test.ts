@@ -32,7 +32,7 @@ suite('JSON - edits', () => {
 
 	let options: ModificationOptions = {
 		formattingOptions
-	}
+	};
 
 	test('set property', () => {
 		let content = '{\n  "x": "y"\n}';
@@ -126,7 +126,7 @@ suite('JSON - edits', () => {
 	});
 
 	test('set item', () => {
-		let content = '{\n  "x": [1, 2, 3],\n  "y": 0\n}'
+		let content = '{\n  "x": [1, 2, 3],\n  "y": 0\n}';
 
 		let edits = setProperty(content, ['x', 0], 6, options);
 		assertEdit(content, edits, '{\n  "x": [6, 2, 3],\n  "y": 0\n}');
@@ -137,7 +137,7 @@ suite('JSON - edits', () => {
 		edits = setProperty(content, ['x', 2], 4, options);
 		assertEdit(content, edits, '{\n  "x": [1, 2, 4],\n  "y": 0\n}');
 
-		edits = setProperty(content, ['x', 3], 3, options)
+		edits = setProperty(content, ['x', 3], 3, options);
 		assertEdit(content, edits, '{\n  "x": [\n    1,\n    2,\n    3,\n    3\n  ],\n  "y": 0\n}');
 	});
 
@@ -214,7 +214,7 @@ suite('JSON - edits', () => {
 	});
 
 	test('set property without formatting', () => {
-		let content = '{\n  "x": [1, 2, 3],\n  "y": 0\n}'
+		let content = '{\n  "x": [1, 2, 3],\n  "y": 0\n}';
 
 		let edits = setProperty(content, ['x', 0], { a: 1, b: 2 }, { formattingOptions });
 		assertEdit(content, edits, '{\n  "x": [{\n      "a": 1,\n      "b": 2\n    }, 2, 3],\n  "y": 0\n}');

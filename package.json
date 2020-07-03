@@ -15,22 +15,25 @@
     "url": "https://github.com/microsoft/node-jsonc-parser/issues"
   },
   "devDependencies": {
-    "mocha": "^6.2.2",
+    "mocha": "^8.0.1",
     "typescript": "^3.6.4",
     "@types/node": "^10.12.12",
     "@types/mocha": "^5.2.7",
-    "tslint": "^5.20.0",
-    "rimraf": "^3.0.0"
+    "@typescript-eslint/eslint-plugin": "^2.30.0",
+    "@typescript-eslint/parser": "^2.30.0",
+    "eslint": "^7.3.1",
+    "rimraf": "^3.0.2"
   },
   "scripts": {
     "prepublishOnly": "npm run clean && npm run compile-esm && npm run test && npm run remove-sourcemap-refs",
     "postpublish": "node ./build/post-publish.js",
-    "compile": "tsc -p ./src",
+    "compile": "tsc -p ./src && && npm run lint",
     "compile-esm": "tsc -p ./src/tsconfig.esm.json",
     "remove-sourcemap-refs": "node ./build/remove-sourcemap-refs.js",
     "clean": "rimraf lib",
     "watch": "tsc -w -p ./src",
     "test": "npm run compile && mocha",
+    "lint": "eslint src/**/*.ts",
     "preversion": "npm test",
     "postversion": "git push && git push --tags"
   }

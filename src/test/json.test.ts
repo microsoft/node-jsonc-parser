@@ -36,7 +36,7 @@ function assertValidParse(input: string, expected: any, options?: ParseOptions):
 	var errors: ParseError[] = [];
 	var actual = parse(input, errors, options);
 
-	assert.deepEqual([], errors)
+	assert.deepEqual([], errors);
 	assert.deepEqual(actual, expected);
 }
 
@@ -94,7 +94,7 @@ function assertVisit(input: string, expected: VisitorCallback[], expectedErrors:
 		onSeparator: oneArgHalder('onSeparator'),
 		onComment: noArgHalder('onComment'),
 		onError: (error: ParseErrorCode, offset: number, length: number, startLine: number, startCharacter: number) => {
-			errors.push({ error, offset, length, startLine, startCharacter })
+			errors.push({ error, offset, length, startLine, startCharacter });
 		}
 	}, {
 		disallowComments
@@ -571,7 +571,7 @@ suite('JSON', () => {
 					], colonOffset: 37
 				}
 			]
-		}, [{ error: ParseErrorCode.ColonExpected, offset: 49, length: 1 }])
+		}, [{ error: ParseErrorCode.ColonExpected, offset: 49, length: 1 }]);
 	});
 
 	test('tree: find location', () => {
