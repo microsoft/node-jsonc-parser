@@ -4,15 +4,15 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import { Edit, FormattingOptions, ParseError, Node, JSONPath, Segment } from '../main';
+import { Edit, ParseError, Node, JSONPath, Segment, ModificationOptions } from '../main';
 import { format, isEOL } from './format';
 import { parseTree, findNodeAtLocation } from './parser';
 
-export function removeProperty(text: string, path: JSONPath, formattingOptions: FormattingOptions): Edit[] {
-	return setProperty(text, path, void 0, formattingOptions);
+export function removeProperty(text: string, path: JSONPath, options: ModificationOptions): Edit[] {
+	return setProperty(text, path, void 0, options);
 }
 
-export function setProperty(text: string, originalPath: JSONPath, value: any, formattingOptions: FormattingOptions, getInsertionIndex?: (properties: string[]) => number, isArrayInsertion: boolean = false): Edit[] {
+export function setProperty(text: string, originalPath: JSONPath, value: any, options: ModificationOptions): Edit[] {
 	let path = originalPath.slice()
 	let errors: ParseError[] = [];
 	let root = parseTree(text, errors);
@@ -38,7 +38,7 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, fo
 		if (value === void 0) { // delete
 			throw new Error('Can not delete in empty document');
 		}
-		return withFormatting(text, { offset: root ? root.offset : 0, length: root ? root.length : 0, content: JSON.stringify(value) }, formattingOptions);
+		return withFormatting(text, { offset: root ? root.offset : 0, length: root ? root.length : 0, content: JSON.stringify(value) }, options);
 	} else if (parent.type === 'object' && typeof lastSegment === 'string' && Array.isArray(parent.children)) {
 		let existing = findNodeAtLocation(parent, [lastSegment]);
 		if (existing !== void 0) {
@@ -61,17 +61,17 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, fo
 						removeEnd = next.offset;
 					}
 				}
-				return withFormatting(text, { offset: removeBegin, length: removeEnd - removeBegin, content: '' }, formattingOptions);
+				return withFormatting(text, { offset: removeBegin, length: removeEnd - removeBegin, content: '' }, options);
 			} else {
 				// set value of existing property
-				return withFormatting(text, { offset: existing.offset, length: existing.length, content: JSON.stringify(value) }, formattingOptions);
+				return withFormatting(text, { offset: existing.offset, length: existing.length, content: JSON.stringify(value) }, options);
 			}
 		} else {
 			if (value === void 0) { // delete
 				return []; // property does not exist, nothing to do
 			}
 			let newProperty = `${JSON.stringify(lastSegment)}: ${JSON.stringify(value)}`;
-			let index = getInsertionIndex ? getInsertionIndex(parent.children.map(p => p.children![0].value)) : parent.children.length;
+			let index = options.getInsertionIndex ? options.getInsertionIndex(parent.children.map(p => p.children![0].value)) : parent.children.length;
 			let edit: Edit;
 			if (index > 0) {
 				let previous = parent.children[index - 1];
@@ -81,7 +81,7 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, fo
 			} else {
 				edit = { offset: parent.offset + 1, length: 0, content: newProperty + ',' };
 			}
-			return withFormatting(text, edit, formattingOptions);
+			return withFormatting(text, edit, options);
 		}
 	} else if (parent.type === 'array' && typeof lastSegment === 'number' && Array.isArray(parent.children)) {
 		let insertIndex = lastSegment;
@@ -95,7 +95,7 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, fo
 				let previous = parent.children[parent.children.length - 1];
 				edit = { offset: previous.offset + previous.length, length: 0, content: ',' + newProperty };
 			}
-			return withFormatting(text, edit, formattingOptions);
+			return withFormatting(text, edit, options);
 		} else if (value === void 0 && parent.children.length >= 0) {
 			// Removal
 			let removalIndex = lastSegment;
@@ -113,12 +113,12 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, fo
 			} else {
 				edit = { offset: toRemove.offset, length: parent.children[removalIndex + 1].offset - toRemove.offset, content: '' };
 			}
-			return withFormatting(text, edit, formattingOptions);
+			return withFormatting(text, edit, options);
 		} else if (value !== void 0) {
 			let edit: Edit;
 			const newProperty = `${JSON.stringify(value)}`;
 
-			if (!isArrayInsertion && parent.children.length > lastSegment) {
+			if (!options.isArrayInsertion && parent.children.length > lastSegment) {
 				let toModify = parent.children[lastSegment];
 
 				edit = { offset: toModify.offset, length: toModify.length, content: newProperty }
@@ -130,18 +130,18 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, fo
 				edit = { offset: previous.offset + previous.length, length: 0, content: ',' + newProperty };
 			}
 
-			return withFormatting(text, edit, formattingOptions);
+			return withFormatting(text, edit, options);
 		} else {
-			throw new Error(`Can not ${value === void 0 ? 'remove' : (isArrayInsertion ? 'insert' : 'modify')} Array index ${insertIndex} as length is not sufficient`);
+			throw new Error(`Can not ${value === void 0 ? 'remove' : (options.isArrayInsertion ? 'insert' : 'modify')} Array index ${insertIndex} as length is not sufficient`);
 		}
 	} else {
 		throw new Error(`Can not add ${typeof lastSegment !== 'number' ? 'index' : 'property'} to parent of type ${parent.type}`);
 	}
 }
 
-function withFormatting(text: string, edit: Edit, formattingOptions: FormattingOptions): Edit[] {
-	if (formattingOptions.inPlace) {
-		return [{ ...edit }]
+function withFormatting(text: string, edit: Edit, options: ModificationOptions): Edit[] {
+	if (!options.formattingOptions) {
+		return [edit]
 	}
 	// apply the edit
 	let newText = applyEdit(text, edit);
@@ -158,7 +158,7 @@ function withFormatting(text: string, edit: Edit, formattingOptions: FormattingO
 		}
 	}
 
-	let edits = format(newText, { offset: begin, length: end - begin }, formattingOptions);
+	let edits = format(newText, { offset: begin, length: end - begin }, options.formattingOptions);
 
 	// apply the formatting edits and track the begin and end offsets of the changes
 	for (let i = edits.length - 1; i >= 0; i--) {

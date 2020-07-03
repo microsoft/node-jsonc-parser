@@ -322,11 +322,6 @@ export interface FormattingOptions {
 	 * The default 'end of line' character. If not set, '\n' is used as default.
 	 */
 	eol?: string;
-	/**
-	 * If true, changes within {@function format} will not be formatted and their original formatting will be preserved.
-	 * Useful for cutting down on computational time for large files.
-	 */
-	inPlace?: boolean;
 }
 
 /**
@@ -350,9 +345,9 @@ export function format(documentText: string, range: Range | undefined, options: 
  */
 export interface ModificationOptions {
 	/**
-	 * Formatting options
+	 * Formatting options. If undefined, the newly inserted code will be inserted unformatted.
 	*/
-	formattingOptions: FormattingOptions;
+	formattingOptions?: FormattingOptions;
 	/**
 	 * Default false. If `JSONPath` refers to an index of an array and {@property isArrayInsertion} is `true`, then
 	 * {@function modify} will insert a new item at that location instead of overwriting its contents.
@@ -380,7 +375,7 @@ export interface ModificationOptions {
  * To apply edits to an input, you can use `applyEdits`.
  */
 export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): Edit[] {
-	return edit.setProperty(text, path, value, options.formattingOptions, options.getInsertionIndex, options.isArrayInsertion);
+	return edit.setProperty(text, path, value, options);
 }
 
 /**

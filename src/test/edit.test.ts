@@ -5,7 +5,7 @@
 'use strict';
 
 import * as assert from 'assert';
-import { FormattingOptions, Edit } from '../main';
+import { FormattingOptions, Edit, ModificationOptions } from '../main';
 import { setProperty, removeProperty } from '../impl/edit';
 
 suite('JSON - edits', () => {
@@ -24,198 +24,202 @@ suite('JSON - edits', () => {
 		assert.equal(content, expected);
 	}
 
-	let formatterOptions: FormattingOptions = {
+	let formattingOptions: FormattingOptions = {
 		insertSpaces: true,
 		tabSize: 2,
 		eol: '\n'
 	};
 
+	let options: ModificationOptions = {
+		formattingOptions
+	}
+
 	test('set property', () => {
 		let content = '{\n  "x": "y"\n}';
-		let edits = setProperty(content, ['x'], 'bar', formatterOptions);
+		let edits = setProperty(content, ['x'], 'bar', options);
 		assertEdit(content, edits, '{\n  "x": "bar"\n}');
 
 		content = 'true';
-		edits = setProperty(content, [], 'bar', formatterOptions);
+		edits = setProperty(content, [], 'bar', options);
 		assertEdit(content, edits, '"bar"');
 
 		content = '{\n  "x": "y"\n}';
-		edits = setProperty(content, ['x'], { key: true }, formatterOptions);
+		edits = setProperty(content, ['x'], { key: true }, options);
 		assertEdit(content, edits, '{\n  "x": {\n    "key": true\n  }\n}');
 
 		content = '{\n  "a": "b",  "x": "y"\n}';
-		edits = setProperty(content, ['a'], null, formatterOptions);
+		edits = setProperty(content, ['a'], null, options);
 		assertEdit(content, edits, '{\n  "a": null,  "x": "y"\n}');
 	});
 
 	test('insert property', () => {
 		let content = '{}';
-		let edits = setProperty(content, ['foo'], 'bar', formatterOptions);
+		let edits = setProperty(content, ['foo'], 'bar', options);
 		assertEdit(content, edits, '{\n  "foo": "bar"\n}');
 
-		edits = setProperty(content, ['foo', 'foo2'], 'bar', formatterOptions);
+		edits = setProperty(content, ['foo', 'foo2'], 'bar', options);
 		assertEdit(content, edits, '{\n  "foo": {\n    "foo2": "bar"\n  }\n}');
 
 		content = '{\n}';
-		edits = setProperty(content, ['foo'], 'bar', formatterOptions);
+		edits = setProperty(content, ['foo'], 'bar', options);
 		assertEdit(content, edits, '{\n  "foo": "bar"\n}');
 
 		content = '  {\n  }';
-		edits = setProperty(content, ['foo'], 'bar', formatterOptions);
+		edits = setProperty(content, ['foo'], 'bar', options);
 		assertEdit(content, edits, '  {\n    "foo": "bar"\n  }');
 
 		content = '{\n  "x": "y"\n}';
-		edits = setProperty(content, ['foo'], 'bar', formatterOptions);
+		edits = setProperty(content, ['foo'], 'bar', options);
 		assertEdit(content, edits, '{\n  "x": "y",\n  "foo": "bar"\n}');
 
 		content = '{\n  "x": "y"\n}';
-		edits = setProperty(content, ['e'], 'null', formatterOptions);
+		edits = setProperty(content, ['e'], 'null', options);
 		assertEdit(content, edits, '{\n  "x": "y",\n  "e": "null"\n}');
 
-		edits = setProperty(content, ['x'], 'bar', formatterOptions);
+		edits = setProperty(content, ['x'], 'bar', options);
 		assertEdit(content, edits, '{\n  "x": "bar"\n}');
 
 		content = '{\n  "x": {\n    "a": 1,\n    "b": true\n  }\n}\n';
-		edits = setProperty(content, ['x'], 'bar', formatterOptions);
+		edits = setProperty(content, ['x'], 'bar', options);
 		assertEdit(content, edits, '{\n  "x": "bar"\n}\n');
 
-		edits = setProperty(content, ['x', 'b'], 'bar', formatterOptions);
+		edits = setProperty(content, ['x', 'b'], 'bar', options);
 		assertEdit(content, edits, '{\n  "x": {\n    "a": 1,\n    "b": "bar"\n  }\n}\n');
 
-		edits = setProperty(content, ['x', 'c'], 'bar', formatterOptions, () => 0);
+		edits = setProperty(content, ['x', 'c'], 'bar', { formattingOptions, getInsertionIndex: () => 0 });
 		assertEdit(content, edits, '{\n  "x": {\n    "c": "bar",\n    "a": 1,\n    "b": true\n  }\n}\n');
 
-		edits = setProperty(content, ['x', 'c'], 'bar', formatterOptions, () => 1);
+		edits = setProperty(content, ['x', 'c'], 'bar', { formattingOptions, getInsertionIndex: () => 1 });
 		assertEdit(content, edits, '{\n  "x": {\n    "a": 1,\n    "c": "bar",\n    "b": true\n  }\n}\n');
 
-		edits = setProperty(content, ['x', 'c'], 'bar', formatterOptions, () => 2);
+		edits = setProperty(content, ['x', 'c'], 'bar', { formattingOptions, getInsertionIndex: () => 2 });
 		assertEdit(content, edits, '{\n  "x": {\n    "a": 1,\n    "b": true,\n    "c": "bar"\n  }\n}\n');
 
-		edits = setProperty(content, ['c'], 'bar', formatterOptions);
+		edits = setProperty(content, ['c'], 'bar', options);
 		assertEdit(content, edits, '{\n  "x": {\n    "a": 1,\n    "b": true\n  },\n  "c": "bar"\n}\n');
 
 		content = '{\n  "a": [\n    {\n    } \n  ]  \n}';
-		edits = setProperty(content, ['foo'], 'bar', formatterOptions);
+		edits = setProperty(content, ['foo'], 'bar', options);
 		assertEdit(content, edits, '{\n  "a": [\n    {\n    } \n  ],\n  "foo": "bar"\n}');
 
 		content = '';
-		edits = setProperty(content, ['foo', 0], 'bar', formatterOptions);
+		edits = setProperty(content, ['foo', 0], 'bar', options);
 		assertEdit(content, edits, '{\n  "foo": [\n    "bar"\n  ]\n}');
 
 		content = '//comment';
-		edits = setProperty(content, ['foo', 0], 'bar', formatterOptions);
+		edits = setProperty(content, ['foo', 0], 'bar', options);
 		assertEdit(content, edits, '{\n  "foo": [\n    "bar"\n  ]\n} //comment');
 	});
 
 	test('remove property', () => {
 		let content = '{\n  "x": "y"\n}';
-		let edits = removeProperty(content, ['x'], formatterOptions);
+		let edits = removeProperty(content, ['x'], options);
 		assertEdit(content, edits, '{\n}');
 
 		content = '{\n  "x": "y", "a": []\n}';
-		edits = removeProperty(content, ['x'], formatterOptions);
+		edits = removeProperty(content, ['x'], options);
 		assertEdit(content, edits, '{\n  "a": []\n}');
 
 		content = '{\n  "x": "y", "a": []\n}';
-		edits = removeProperty(content, ['a'], formatterOptions);
+		edits = removeProperty(content, ['a'], options);
 		assertEdit(content, edits, '{\n  "x": "y"\n}');
 	});
 
 	test('set item', () => {
 		let content = '{\n  "x": [1, 2, 3],\n  "y": 0\n}'
 
-		let edits = setProperty(content, ['x', 0], 6, formatterOptions);
+		let edits = setProperty(content, ['x', 0], 6, options);
 		assertEdit(content, edits, '{\n  "x": [6, 2, 3],\n  "y": 0\n}');
 
-		edits = setProperty(content, ['x', 1], 5, formatterOptions);
+		edits = setProperty(content, ['x', 1], 5, options);
 		assertEdit(content, edits, '{\n  "x": [1, 5, 3],\n  "y": 0\n}');
 
-		edits = setProperty(content, ['x', 2], 4, formatterOptions);
+		edits = setProperty(content, ['x', 2], 4, options);
 		assertEdit(content, edits, '{\n  "x": [1, 2, 4],\n  "y": 0\n}');
 
-		edits = setProperty(content, ['x', 3], 3, formatterOptions)
+		edits = setProperty(content, ['x', 3], 3, options)
 		assertEdit(content, edits, '{\n  "x": [\n    1,\n    2,\n    3,\n    3\n  ],\n  "y": 0\n}');
 	});
 
 	test('insert item at 0; isArrayInsertion = true', () => {
 		let content = '[\n  2,\n  3\n]';
-		let edits = setProperty(content, [0], 1, formatterOptions, undefined, true);
+		let edits = setProperty(content, [0], 1, { formattingOptions, isArrayInsertion: true });
 		assertEdit(content, edits, '[\n  1,\n  2,\n  3\n]');
 	});
 
 	test('insert item at 0 in empty array', () => {
 		let content = '[\n]';
-		let edits = setProperty(content, [0], 1, formatterOptions);
+		let edits = setProperty(content, [0], 1, options);
 		assertEdit(content, edits, '[\n  1\n]');
 	});
 
 	test('insert item at an index; isArrayInsertion = true', () => {
 		let content = '[\n  1,\n  3\n]';
-		let edits = setProperty(content, [1], 2, formatterOptions, undefined, true);
+		let edits = setProperty(content, [1], 2, { formattingOptions, isArrayInsertion: true });
 		assertEdit(content, edits, '[\n  1,\n  2,\n  3\n]');
 	});
 
 	test('insert item at an index in empty array', () => {
 		let content = '[\n]';
-		let edits = setProperty(content, [1], 1, formatterOptions);
+		let edits = setProperty(content, [1], 1, options);
 		assertEdit(content, edits, '[\n  1\n]');
 	});
 
 	test('insert item at end index', () => {
 		let content = '[\n  1,\n  2\n]';
-		let edits = setProperty(content, [2], 3, formatterOptions);
+		let edits = setProperty(content, [2], 3, options);
 		assertEdit(content, edits, '[\n  1,\n  2,\n  3\n]');
 	});
 
 	test('insert item at end to empty array', () => {
 		let content = '[\n]';
-		let edits = setProperty(content, [-1], 'bar', formatterOptions);
+		let edits = setProperty(content, [-1], 'bar', options);
 		assertEdit(content, edits, '[\n  "bar"\n]');
 	});
 
 	test('insert item at end', () => {
 		let content = '[\n  1,\n  2\n]';
-		let edits = setProperty(content, [-1], 'bar', formatterOptions);
+		let edits = setProperty(content, [-1], 'bar', options);
 		assertEdit(content, edits, '[\n  1,\n  2,\n  "bar"\n]');
 	});
 
 	test('remove item in array with one item', () => {
 		let content = '[\n  1\n]';
-		let edits = setProperty(content, [0], void 0, formatterOptions);
+		let edits = setProperty(content, [0], void 0, options);
 		assertEdit(content, edits, '[]');
 	});
 
 	test('remove item in the middle of the array', () => {
 		let content = '[\n  1,\n  2,\n  3\n]';
-		let edits = setProperty(content, [1], void 0, formatterOptions);
+		let edits = setProperty(content, [1], void 0, options);
 		assertEdit(content, edits, '[\n  1,\n  3\n]');
 	});
 
 	test('remove last item in the array', () => {
 		let content = '[\n  1,\n  2,\n  "bar"\n]';
-		let edits = setProperty(content, [2], void 0, formatterOptions);
+		let edits = setProperty(content, [2], void 0, options);
 		assertEdit(content, edits, '[\n  1,\n  2\n]');
 	});
 
 	test('remove last item in the array if ends with comma', () => {
 		let content = '[\n  1,\n  "foo",\n  "bar",\n]';
-		let edits = setProperty(content, [2], void 0, formatterOptions);
+		let edits = setProperty(content, [2], void 0, options);
 		assertEdit(content, edits, '[\n  1,\n  "foo"\n]');
 	});
 
 	test('remove last item in the array if there is a comment in the beginning', () => {
 		let content = '// This is a comment\n[\n  1,\n  "foo",\n  "bar"\n]';
-		let edits = setProperty(content, [2], void 0, formatterOptions);
+		let edits = setProperty(content, [2], void 0, options);
 		assertEdit(content, edits, '// This is a comment\n[\n  1,\n  "foo"\n]');
 	});
 
-	test('set property w/ in-place formatting options', () => {
+	test('set property without formatting', () => {
 		let content = '{\n  "x": [1, 2, 3],\n  "y": 0\n}'
 
-		let edits = setProperty(content, ['x', 0], { a: 1, b: 2 }, formatterOptions);
+		let edits = setProperty(content, ['x', 0], { a: 1, b: 2 }, { formattingOptions });
 		assertEdit(content, edits, '{\n  "x": [{\n      "a": 1,\n      "b": 2\n    }, 2, 3],\n  "y": 0\n}');
 
-		edits = setProperty(content, ['x', 0], { a: 1, b: 2 }, { ...formatterOptions, inPlace: true });
+		edits = setProperty(content, ['x', 0], { a: 1, b: 2 }, { formattingOptions: undefined });
 		assertEdit(content, edits, '{\n  "x": [{"a":1,"b":2}, 2, 3],\n  "y": 0\n}');
 	});
 });
