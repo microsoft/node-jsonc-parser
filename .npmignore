@@ -9,3 +9,5 @@ test/
 .travis.yml
 .eslintrc
 .gitignore
+.mocharc.json
+.eslintrc.json
