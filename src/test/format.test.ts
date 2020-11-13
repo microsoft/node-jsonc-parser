@@ -10,7 +10,7 @@ import { Range } from '../main';
 
 suite('JSON - formatter', () => {
 
-	function format(content: string, expected: string, insertSpaces = true) {
+	function format(content: string, expected: string, insertSpaces = true, insertFinalNewline = false) {
 		let range: Range | undefined = void 0;
 		var rangeStart = content.indexOf('|');
 		var rangeEnd = content.lastIndexOf('|');
@@ -19,7 +19,7 @@ suite('JSON - formatter', () => {
 			range = { offset: rangeStart, length: rangeEnd - rangeStart };
 		}
 
-		var edits = Formatter.format(content, range, { tabSize: 2, insertSpaces: insertSpaces, eol: '\n' });
+		var edits = Formatter.format(content, range, { tabSize: 2, insertSpaces, insertFinalNewline, eol: '\n' });
 
 		let lastEditOffset = content.length;
 		for (let i = edits.length - 1; i >= 0; i--) {
@@ -472,7 +472,7 @@ suite('JSON - formatter', () => {
 		format(content, expected);
 	});
 
-	test('line comment bug 33 ', () => {
+	test('line comment, enforce line comment ', () => {
 		var content = [
 			'{"settings": // This is some text',
 			'{',
@@ -503,5 +503,19 @@ suite('JSON - formatter', () => {
 		].join('\n');
 
 		format(content, expected);
+	});
+
+	test('insertFinalNewline', () => {
+		var content = [
+			'{',
+			'}'
+		].join('\n');
+
+		var expected = [
+			'{}',
+			''
+		].join('\n');
+
+		format(content, expected, undefined, true);
 	});
 });

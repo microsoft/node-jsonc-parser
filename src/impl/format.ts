@@ -63,7 +63,7 @@ export function format(documentText: string, range: Range | undefined, options: 
 	}
 	let editOperations: Edit[] = [];
 	function addEdit(text: string, startOffset: number, endOffset: number) {
-		if (!hasError && startOffset < rangeEnd && endOffset > rangeStart && documentText.substring(startOffset, endOffset) !== text) {
+		if (!hasError && (!range || (startOffset < rangeEnd && endOffset > rangeStart)) && documentText.substring(startOffset, endOffset) !== text) {
 			editOperations.push({ offset: startOffset, length: endOffset - startOffset, content: text });
 		}
 	}
@@ -155,7 +155,9 @@ export function format(documentText: string, range: Range | undefined, options: 
 			if (lineBreak && (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia)) {
 				replaceContent = newLineAndIndent();
 			}
-
+		}
+		if (secondToken === SyntaxKind.EOF) {
+			replaceContent = options.insertFinalNewline ? eol : '';
 		}
 		let secondTokenStart = scanner.getTokenOffset() + formatTextStart;
 		addEdit(replaceContent, firstTokenEnd, secondTokenStart);

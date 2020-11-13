@@ -321,6 +321,10 @@ export interface FormattingOptions {
 	 * The default 'end of line' character. If not set, '\n' is used as default.
 	 */
 	eol?: string;
+	/**
+	 * If set, will add a new line at the end of the document.
+	 */
+	insertFinalNewline?: boolean;
 }
 
 /**
