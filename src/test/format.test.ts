@@ -471,6 +471,28 @@ suite('JSON - formatter', () => {
 
 		format(content, expected);
 	});
+
+	test('line comment bug 33 ', () => {
+		var content = [
+			'{"settings": // This is some text',
+			'{',
+			'"foo": 1',
+			'}',
+			'}'
+		].join('\n');
+
+		var expected = [
+			'{',
+			'  "settings": // This is some text',
+			'  {',
+			'    "foo": 1',
+			'  }',
+			'}'
+		].join('\n');
+
+		format(content, expected);
+	});
+
 	test('random content', () => {
 		var content = [
 			'a 1 b 1 3 true'

@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import { Range, FormattingOptions, Edit, SyntaxKind, ScanError} from '../main';
+import { Range, FormattingOptions, Edit, SyntaxKind, ScanError } from '../main';
 import { createScanner } from './scanner';
 
 export function format(documentText: string, range: Range | undefined, options: FormattingOptions): Edit[] {
@@ -81,12 +81,14 @@ export function format(documentText: string, range: Range | undefined, options: 
 		let secondToken = scanNext();
 
 		let replaceContent = '';
+		let needsLineBreak = false;
 		while (!lineBreak && (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia)) {
 			// comments on the same line: keep them on the same line, but ignore them otherwise
 			let commentTokenStart = scanner.getTokenOffset() + formatTextStart;
 			addEdit(' ', firstTokenEnd, commentTokenStart);
 			firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
-			replaceContent = secondToken === SyntaxKind.LineCommentTrivia ? newLineAndIndent() : '';
+			needsLineBreak = secondToken === SyntaxKind.LineCommentTrivia;
+			replaceContent = needsLineBreak ? newLineAndIndent() : '';
 			secondToken = scanNext();
 		}
 
@@ -114,17 +116,21 @@ export function format(documentText: string, range: Range | undefined, options: 
 				case SyntaxKind.BlockCommentTrivia:
 					if (lineBreak) {
 						replaceContent = newLineAndIndent();
-					} else {
+					} else if (!needsLineBreak) {
 						// symbol following comment on the same line: keep on same line, separate with ' '
 						replaceContent = ' ';
 					}
 					break;
 				case SyntaxKind.ColonToken:
-					replaceContent = ' ';
+					if (!needsLineBreak) {
+						replaceContent = ' ';
+					}
 					break;
 				case SyntaxKind.StringLiteral:
 					if (secondToken === SyntaxKind.ColonToken) {
-						replaceContent = '';
+						if (!needsLineBreak) {
+							replaceContent = '';
+						}
 						break;
 					}
 				// fall through
@@ -135,7 +141,9 @@ export function format(documentText: string, range: Range | undefined, options: 
 				case SyntaxKind.CloseBraceToken:
 				case SyntaxKind.CloseBracketToken:
 					if (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia) {
-						replaceContent = ' ';
+						if (!needsLineBreak) {
+							replaceContent = ' ';
+						}
 					} else if (secondToken !== SyntaxKind.CommaToken && secondToken !== SyntaxKind.EOF) {
 						hasError = true;
 					}
