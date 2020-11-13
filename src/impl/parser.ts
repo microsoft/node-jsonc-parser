@@ -209,7 +209,7 @@ export function parse(text: string, errors: ParseError[] = [], options: ParseOpt
 /**
  * Parses the given text and returns a tree representation the JSON content. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
  */
-export function parseTree(text: string, errors: ParseError[] = [], options: ParseOptions = ParseOptions.DEFAULT): Node {
+export function parseTree(text: string, errors: ParseError[] = [], options: ParseOptions = ParseOptions.DEFAULT): Node | undefined {
 	let currentParent: NodeImpl = { type: 'array', offset: -1, length: -1, children: [], parent: undefined }; // artificial root
 
 	function ensurePropertyComplete(endOffset: number) {
@@ -276,7 +276,7 @@ export function parseTree(text: string, errors: ParseError[] = [], options: Pars
 /**
  * Finds the node at the given path in a JSON DOM.
  */
-export function findNodeAtLocation(root: Node, path: JSONPath): Node | undefined {
+export function findNodeAtLocation(root: Node | undefined, path: JSONPath): Node | undefined {
 	if (!root) {
 		return undefined;
 	}

@@ -53,8 +53,8 @@ function assertTree(input: string, expected: any, expectedErrors: ParseError[] =
 	var actual = parseTree(input, errors);
 
 	assert.deepEqual(errors, expectedErrors);
-	let checkParent = (node: Node) => {
-		if (node.children) {
+	let checkParent = (node: Node | undefined) => {
+		if (node?.children) {
 			for (let child of node.children) {
 				assert.equal(node, child.parent);
 				delete (<any>child).parent; // delete to avoid recursion in deep equal
@@ -103,8 +103,8 @@ function assertVisit(input: string, expected: VisitorCallback[], expectedErrors:
 	assert.deepEqual(actuals, expected, JSON.stringify(actuals));
 }
 
-function assertNodeAtLocation(input: Node, segments: Segment[], expected: any) {
-	let actual = findNodeAtLocation(input, segments);
+function assertNodeAtLocation(input: Node | undefined, segments: Segment[], expected: any) {
+	let actual = input && findNodeAtLocation(input, segments);
 	assert.deepEqual(actual ? getNodeValue(actual) : void 0, expected);
 	if (actual) {
 		assert.deepEqual(getNodePath(actual), segments);

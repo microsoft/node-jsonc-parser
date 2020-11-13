@@ -106,7 +106,7 @@ export const parse: (text: string, errors?: ParseError[], options?: ParseOptions
 /**
  * Parses the given text and returns a tree representation the JSON content. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
  */
-export const parseTree: (text: string, errors?: ParseError[], options?: ParseOptions) => Node = parser.parseTree;
+export const parseTree: (text: string, errors?: ParseError[], options?: ParseOptions) => Node | undefined = parser.parseTree;
 
 /**
  * Finds the node at the given path in a JSON DOM.
@@ -167,7 +167,7 @@ export const enum ParseErrorCode {
 
 export function printParseErrorCode(code: ParseErrorCode) {
 	switch (code) {
-		case ParseErrorCode.InvalidSymbol: return 'InvalidSymbol';		case ParseErrorCode.InvalidNumberFormat: return 'InvalidNumberFormat';
+		case ParseErrorCode.InvalidSymbol: return 'InvalidSymbol'; case ParseErrorCode.InvalidNumberFormat: return 'InvalidNumberFormat';
 		case ParseErrorCode.PropertyNameExpected: return 'PropertyNameExpected';
 		case ParseErrorCode.ValueExpected: return 'ValueExpected';
 		case ParseErrorCode.ColonExpected: return 'ColonExpected';
