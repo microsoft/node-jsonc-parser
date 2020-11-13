@@ -142,7 +142,7 @@ export interface JSONVisitor {
 /**
  * Parses the given text and returns a tree representation the JSON content. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
  */
-export declare function parseTree(text: string, errors?: ParseError[], options?: ParseOptions): Node;
+export declare function parseTree(text: string, errors?: ParseError[], options?: ParseOptions): Node | undefined;
 
 export declare type NodeType = "object" | "array" | "property" | "string" | "number" | "boolean" | "null";
 export interface Node {
