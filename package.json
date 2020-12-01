@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "description": "Scanner and parser for JSON with comments.",
   "main": "./lib/umd/main.js",
-  "typings": "./lib/umd/main",
+  "typings": "./lib/umd/main.d.ts",
   "module": "./lib/esm/main.js",
   "author": "Microsoft Corporation",
   "repository": {
