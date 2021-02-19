@@ -288,7 +288,7 @@ export function findNodeAtLocation(root: Node | undefined, path: JSONPath): Node
 			}
 			let found = false;
 			for (const propertyNode of node.children) {
-				if (Array.isArray(propertyNode.children) && propertyNode.children[0].value === segment) {
+				if (Array.isArray(propertyNode.children) && propertyNode.children[0].value === segment && propertyNode.children.length === 2) {
 					node = propertyNode.children[1];
 					found = true;
 					break;
