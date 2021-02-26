@@ -575,7 +575,7 @@ suite('JSON', () => {
 	});
 
 	test('tree: find location', () => {
-		let root = parseTree('{ "key1": { "key11": [ "val111", "val112" ] }, "key2": [ { "key21": false, "key22": 221 }, null, [{}] ] }');
+		let root = parseTree('{ "key1": { "key11": [ "val111", "val112" ] }, "key2": [ { "key21": false, "key22": 221 }, null, [{}] ], "key3": { "key31":, "key32": 32 } }');
 		assertNodeAtLocation(root, ['key1'], { key11: ['val111', 'val112'] });
 		assertNodeAtLocation(root, ['key1', 'key11'], ['val111', 'val112']);
 		assertNodeAtLocation(root, ['key1', 'key11', 0], 'val111');
@@ -586,6 +586,8 @@ suite('JSON', () => {
 		assertNodeAtLocation(root, ['key2', 1], null);
 		assertNodeAtLocation(root, ['key2', 2], [{}]);
 		assertNodeAtLocation(root, ['key2', 2, 0], {});
+		assertNodeAtLocation(root, ['key3', 'key31', 'key311'], undefined);
+		assertNodeAtLocation(root, ['key3', 'key32'], 32);
 	});
 
 	test('location: matches', () => {
