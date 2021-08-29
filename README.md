@@ -21,9 +21,10 @@ JSONC is JSON with JavaScript style comments. This node module provides a scanne
 Installation
 ------------
 
-    npm install --save jsonc-parser
-    
-    
+```
+npm install --save jsonc-parser
+```
+
 API
 ---
 
@@ -34,7 +35,7 @@ API
  * Creates a JSON scanner on the given text.
  * If ignoreTrivia is set, whitespaces or comments are ignored.
  */
-export function createScanner(text:string, ignoreTrivia:boolean = false):JSONScanner;
+export function createScanner(text: string, ignoreTrivia: boolean = false): JSONScanner;
     
 /**
  * The scanner object, representing a JSON scanner at a position in the input string.
@@ -57,7 +58,7 @@ export interface JSONScanner {
      */
     getToken(): SyntaxKind;
     /**
-     * Returns the last read token value. The value for strings is the decoded string content. For numbers its of type number, for boolean it's true or false.
+     * Returns the last read token value. The value for strings is the decoded string content. For numbers it's of type number, for boolean it's true or false.
      */
     getTokenValue(): string;
     /**
@@ -172,6 +173,7 @@ export declare function stripComments(text: string, replaceCh?: string): string;
 export declare function getLocation(text: string, position: number): Location;
 
 export declare type Segment = string | number;
+export declare type JSONPath = Segment[];
 export interface Location {
     /**
      * The previous property key or literal value (string, number, boolean or null) or undefined.
@@ -181,13 +183,13 @@ export interface Location {
      * The path describing the location in the JSON document. The path consists of a sequence strings
      * representing an object property or numbers for array indices.
      */
-    path: Segment[];
+    path: JSONPath;
     /**
      * Matches the locations path against a pattern consisting of strings (for properties) and numbers (for array indices).
      * '*' will match a single segment, of any property name or index.
-     * '**' will match a sequece of segments or no segment, of any property name or index.
+     * '**' will match a sequence of segments or no segment, of any property name or index.
      */
-    matches: (patterns: Segment[]) => boolean;
+    matches: (patterns: JSONPath) => boolean;
     /**
      * If set, the location's offset is at a property key.
      */
@@ -207,7 +209,7 @@ export function findNodeAtOffset(root: Node, offset: number, includeRightBound?:
 /**
  * Gets the JSON path of the given JSON DOM node
  */
-export function getNodePath(node: Node) : JSONPath;
+export function getNodePath(node: Node): JSONPath;
 
 /**
  * Evaluates the JavaScript object of the given JSON DOM node 
