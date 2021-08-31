@@ -226,7 +226,7 @@ export function getNodeValue(node: Node): any;
  * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
  * To apply edits to an input, you can use `applyEdits`
  */
-export function format(documentText: string, range: Range, options: FormattingOptions): Edit[];
+export function format(documentText: string, range?: Range, options?: FormattingOptions): Edit[];
 
 
 /**
@@ -244,7 +244,7 @@ export function format(documentText: string, range: Range, options: FormattingOp
  * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
  * To apply edits to an input, you can use `applyEdits`
  */
-export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): Edit[];
+export function modify(text: string, path: JSONPath, value?: any, options?: ModificationOptions): Edit[];
 
 /**
  * Applies edits to a input string.

@@ -339,8 +339,8 @@ export interface FormattingOptions {
  * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
  * To apply edits to an input, you can use `applyEdits`.
  */
-export function format(documentText: string, range: Range | undefined, options: FormattingOptions): Edit[] {
-	return formatter.format(documentText, range, options);
+export function format(documentText: string, range?: Range | undefined, options?: FormattingOptions): Edit[] {
+	return formatter.format(documentText, range, options || {});
 }
 
 /** 
@@ -377,8 +377,8 @@ export interface ModificationOptions {
  * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
  * To apply edits to an input, you can use `applyEdits`.
  */
-export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): Edit[] {
-	return edit.setProperty(text, path, value, options);
+export function modify(text: string, path: JSONPath, value?: any, options?: ModificationOptions): Edit[] {
+	return edit.setProperty(text, path, value, options || {});
 }
 
 /**
