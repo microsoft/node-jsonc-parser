@@ -88,6 +88,8 @@ export interface JSONScanner {
 
 export interface ParseOptions {
     disallowComments?: boolean;
+    allowTrailingComma?: boolean;
+    allowEmptyContent?: boolean;
 }
 /**
  * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
