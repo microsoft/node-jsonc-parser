@@ -25,11 +25,13 @@
     "typescript": "^4.4.3"
   },
   "scripts": {
-    "prepublishOnly": "npm run clean && npm run compile-esm && npm run test && npm run remove-sourcemap-refs",
+    "prepublishOnly": "npm run clean && npm run test && npm run clean && npm run compile-umd-prod && npm run compile-esm-prod",
     "postpublish": "node ./build/post-publish.js",
     "compile": "tsc -p ./src && npm run lint",
+    "compile-umd": "tsc -p ./src/tsconfig.json",
+    "compile-umd-prod": "tsc -p ./src/tsconfig.umd.prod.json",
     "compile-esm": "tsc -p ./src/tsconfig.esm.json",
-    "remove-sourcemap-refs": "node ./build/remove-sourcemap-refs.js",
+    "compile-esm-prod": "tsc -p ./src/tsconfig.esm.prod.json",
     "clean": "rimraf lib",
     "watch": "tsc -w -p ./src",
     "test": "npm run compile && mocha ./lib/umd/test",
