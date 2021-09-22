@@ -1,16 +1,8 @@
 {
+	"extends": "./tsconfig.json",
 	"compilerOptions": {
-		"target": "ES5",
 		"module": "es6",
-		"moduleResolution": "node",
-		"sourceMap": true,
-		"declaration": true,
-		"stripInternal": true,
-		"outDir": "../lib/esm",
-		"strict": true,
-		"lib": [
-			"es5",
-			"es2015.promise"
-		]
+		"target": "es2015",
+		"outDir": "../lib/esm"
 	}
 }
