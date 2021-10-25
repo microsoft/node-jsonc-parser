@@ -288,7 +288,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 							tokenLineStartOffset = pos;
 						}
 					}
-					
+
 					if (!commentClosed) {
 						pos++;
 						scanError = ScanError.UnexpectedEndOfComment;
@@ -390,13 +390,11 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 }
 
 function isWhiteSpace(ch: number): boolean {
-	return ch === CharacterCodes.space || ch === CharacterCodes.tab || ch === CharacterCodes.verticalTab || ch === CharacterCodes.formFeed ||
-		ch === CharacterCodes.nonBreakingSpace || ch === CharacterCodes.ogham || ch >= CharacterCodes.enQuad && ch <= CharacterCodes.zeroWidthSpace ||
-		ch === CharacterCodes.narrowNoBreakSpace || ch === CharacterCodes.mathematicalSpace || ch === CharacterCodes.ideographicSpace || ch === CharacterCodes.byteOrderMark;
+	return ch === CharacterCodes.space || ch === CharacterCodes.tab;
 }
 
 function isLineBreak(ch: number): boolean {
-	return ch === CharacterCodes.lineFeed || ch === CharacterCodes.carriageReturn || ch === CharacterCodes.lineSeparator || ch === CharacterCodes.paragraphSeparator;
+	return ch === CharacterCodes.lineFeed || ch === CharacterCodes.carriageReturn;
 }
 
 function isDigit(ch: number): boolean {
@@ -404,40 +402,10 @@ function isDigit(ch: number): boolean {
 }
 
 const enum CharacterCodes {
-	nullCharacter = 0,
-	maxAsciiCharacter = 0x7F,
-
 	lineFeed = 0x0A,              // \n
 	carriageReturn = 0x0D,        // \r
-	lineSeparator = 0x2028,
-	paragraphSeparator = 0x2029,
 
-	// REVIEW: do we need to support this?  The scanner doesn't, but our IText does.  This seems
-	// like an odd disparity?  (Or maybe it's completely fine for them to be different).
-	nextLine = 0x0085,
-
-	// Unicode 3.0 space characters
 	space = 0x0020,   // " "
-	nonBreakingSpace = 0x00A0,   //
-	enQuad = 0x2000,
-	emQuad = 0x2001,
-	enSpace = 0x2002,
-	emSpace = 0x2003,
-	threePerEmSpace = 0x2004,
-	fourPerEmSpace = 0x2005,
-	sixPerEmSpace = 0x2006,
-	figureSpace = 0x2007,
-	punctuationSpace = 0x2008,
-	thinSpace = 0x2009,
-	hairSpace = 0x200A,
-	zeroWidthSpace = 0x200B,
-	narrowNoBreakSpace = 0x202F,
-	ideographicSpace = 0x3000,
-	mathematicalSpace = 0x205F,
-	ogham = 0x1680,
-
-	_ = 0x5F,
-	$ = 0x24,
 
 	_0 = 0x30,
 	_1 = 0x31,
@@ -504,38 +472,20 @@ const enum CharacterCodes {
 	Y = 0x59,
 	Z = 0x5a,
 
-	ampersand = 0x26,             // &
 	asterisk = 0x2A,              // *
-	at = 0x40,                    // @
 	backslash = 0x5C,             // \
-	bar = 0x7C,                   // |
-	caret = 0x5E,                 // ^
 	closeBrace = 0x7D,            // }
 	closeBracket = 0x5D,          // ]
-	closeParen = 0x29,            // )
 	colon = 0x3A,                 // :
 	comma = 0x2C,                 // ,
 	dot = 0x2E,                   // .
 	doubleQuote = 0x22,           // "
-	equals = 0x3D,                // =
-	exclamation = 0x21,           // !
-	greaterThan = 0x3E,           // >
-	lessThan = 0x3C,              // <
 	minus = 0x2D,                 // -
 	openBrace = 0x7B,             // {
 	openBracket = 0x5B,           // [
-	openParen = 0x28,             // (
-	percent = 0x25,               // %
 	plus = 0x2B,                  // +
-	question = 0x3F,              // ?
-	semicolon = 0x3B,             // ;
-	singleQuote = 0x27,           // '
 	slash = 0x2F,                 // /
-	tilde = 0x7E,                 // ~
 
-	backspace = 0x08,             // \b
 	formFeed = 0x0C,              // \f
-	byteOrderMark = 0xFEFF,
 	tab = 0x09,                   // \t
-	verticalTab = 0x0B,           // \v
 }
