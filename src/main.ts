@@ -275,6 +275,16 @@ export interface JSONVisitor {
 	 */
 	onError?: (error: ParseErrorCode, offset: number, length: number, startLine: number, startCharacter: number) => void;
 }
+/**
+ * An edit result describes a textual edit operation. It is the result of a `format` and `modify` operation. 
+ * It consist of one or more edits describing insertions, replacements or removals of text segments.
+ * * The offsets of the edits refer to the original state of the document. 
+ * * No two edits change or remove the same range of text in the original document.
+ * * Multiple edits can have the same offset if they are multiple inserts, or an insert followed by a remove or replace.
+ * * The order in the array defines which edit is applied first.
+ * To apply an edit result use `applyEdits`.
+ */
+export type EditResult = Edit[];
 
 /**
  * Represents a text modification
@@ -333,13 +343,10 @@ export interface FormattingOptions {
  * @param documentText The input text 
  * @param range The range to format or `undefined` to format the full content
  * @param options The formatting options
- * @returns A list of edit operations describing the formatting changes to the original document. Edits can be either inserts, replacements or
- * removals of text segments. All offsets refer to the original state of the document. No two edits must change or remove the same range of
- * text in the original document. However, multiple edits can have
- * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
- * To apply edits to an input, you can use `applyEdits`.
+ * @returns The edit operations describing the formatting changes to the original document following the format described in {EditResult}.
+ * To apply the edit operation to the input, use `applyEdits`.
  */
-export function format(documentText: string, range: Range | undefined, options: FormattingOptions): Edit[] {
+export function format(documentText: string, range: Range | undefined, options: FormattingOptions): EditResult {
 	return formatter.format(documentText, range, options);
 }
 
@@ -363,7 +370,7 @@ export interface ModificationOptions {
 }
 
 /**
- * Computes the edits needed to modify a value in the JSON document.
+ * Computes the edit operations needed to modify a value in the JSON document.
  * 
  * @param documentText The input text 
  * @param path The path of the value to change. The path represents either to the document root, a property or an array item.
@@ -371,20 +378,21 @@ export interface ModificationOptions {
  * @param value The new value for the specified property or item. If the value is undefined,
  * the property or item will be removed.
  * @param options Options
- * @returns A list of edit operations describing the formatting changes to the original document. Edits can be either inserts, replacements or
- * removals of text segments. All offsets refer to the original state of the document. No two edits must change or remove the same range of
- * text in the original document. However, multiple edits can have
- * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
- * To apply edits to an input, you can use `applyEdits`.
+ * @returns The edit operation describing the changes to the original document, following the format described in {EditResult}.
+ * To apply the edit operation to the input, use `applyEdits`.
  */
-export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): Edit[] {
+export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): EditResult {
 	return edit.setProperty(text, path, value, options);
 }
 
 /**
  * Applies edits to a input string.
+ * @param text The input text 
+ * @param edits An edit operation following the format described in {EditResult}.
+ * @returns The text with the applied edits.
+ * @throws An error if the edit operation is not well-formed as described in {EditResult}.
  */
-export function applyEdits(text: string, edits: Edit[]): string {
+export function applyEdits(text: string, edits: EditResult): string {
 	for (let i = edits.length - 1; i >= 0; i--) {
 		text = edit.applyEdit(text, edits[i]);
 	}
