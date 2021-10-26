@@ -283,6 +283,7 @@ export interface JSONVisitor {
  * * Multiple edits can have the same offset if they are multiple inserts, or an insert followed by a remove or replace.
  * * The order in the array defines which edit is applied first.
  * To apply an edit result use `applyEdits`.
+ * In general multiple EditResults must not be concatenated because they might impact each other, producing incorrect or malformed JSON data.
  */
 export type EditResult = Edit[];
 
@@ -343,7 +344,7 @@ export interface FormattingOptions {
  * @param documentText The input text 
  * @param range The range to format or `undefined` to format the full content
  * @param options The formatting options
- * @returns The edit operations describing the formatting changes to the original document following the format described in {EditResult}.
+ * @returns The edit operations describing the formatting changes to the original document following the format described in {@linkcode EditResult}.
  * To apply the edit operation to the input, use `applyEdits`.
  */
 export function format(documentText: string, range: Range | undefined, options: FormattingOptions): EditResult {
@@ -378,7 +379,7 @@ export interface ModificationOptions {
  * @param value The new value for the specified property or item. If the value is undefined,
  * the property or item will be removed.
  * @param options Options
- * @returns The edit operation describing the changes to the original document, following the format described in {EditResult}.
+ * @returns The edit operation describing the changes to the original document, following the format described in {@linkcode EditResult}.
  * To apply the edit operation to the input, use `applyEdits`.
  */
 export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): EditResult {
@@ -386,11 +387,11 @@ export function modify(text: string, path: JSONPath, value: any, options: Modifi
 }
 
 /**
- * Applies edits to a input string.
+ * Applies edits to an input string.
  * @param text The input text 
- * @param edits An edit operation following the format described in {EditResult}.
+ * @param edits An edit operation following the format described in {@linkcode EditResult}.
  * @returns The text with the applied edits.
- * @throws An error if the edit operation is not well-formed as described in {EditResult}.
+ * @throws An error if the edit operation is not well-formed as described in {@linkcode EditResult}.
  */
 export function applyEdits(text: string, edits: EditResult): string {
 	for (let i = edits.length - 1; i >= 0; i--) {
