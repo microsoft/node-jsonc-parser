@@ -418,9 +418,23 @@ export function modify(text: string, path: JSONPath, value: any, options: Modifi
  * @returns The text with the applied edits.
  * @throws An error if the edit operations are not well-formed as described in {@linkcode EditResult}.
  */
-export function applyEdits(text: string, edits: EditResult): string {
-	for (let i = edits.length - 1; i >= 0; i--) {
-		text = edit.applyEdit(text, edits[i]);
+ export function applyEdits(text: string, edits: EditResult): string {
+	let sortedEdits = edits.slice(0).sort((a, b) => {
+		const diff = a.offset - b.offset;
+		if (diff === 0) {
+			return a.length - b.length;
+		}
+		return diff;
+	});
+	let lastModifiedOffset = text.length;
+	for (let i = sortedEdits.length - 1; i >= 0; i--) {
+		let e = sortedEdits[i];
+		if (e.offset + e.length <= lastModifiedOffset) {
+			text = edit.applyEdit(text, e);
+		} else {
+			throw new Error('Overlapping edit');
+		}
+		lastModifiedOffset = e.offset;
 	}
 	return text;
 }
