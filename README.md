@@ -50,7 +50,7 @@ export interface JSONScanner {
      */
     scan(): SyntaxKind;
     /**
-     * Returns the current scan position, which is after the last read token.
+     * Returns the zero-based current scan position, which is after the last read token.
      */
     getPosition(): number;
     /**
@@ -62,7 +62,7 @@ export interface JSONScanner {
      */
     getTokenValue(): string;
     /**
-     * The start offset of the last read token.
+     * The zero-based start offset of the last read token.
      */
     getTokenOffset(): number;
     /**
@@ -103,15 +103,29 @@ export declare function parse(text: string, errors?: {error: ParseErrorCode;}[],
  */
 export declare function visit(text: string, visitor: JSONVisitor, options?: ParseOptions): any;
 
+/**
+ * Visitor called by {@linkcode visit} when parsing JSON.
+ * 
+ * The visitor functions have the following common parameters:
+ * - `offset`: Global offset within the JSON document, starting at 0
+ * - `startLine`: Line number, starting at 0
+ * - `startCharacter`: Start character (column) within the current line, starting at 0
+ * 
+ * Additionally some functions have a `pathSupplier` parameter which can be used to obtain the
+ * current `JSONPath` within the document.
+ */
 export interface JSONVisitor {
     /**
      * Invoked when an open brace is encountered and an object is started. The offset and length represent the location of the open brace.
      */
-    onObjectBegin?: (offset: number, length: number, startLine: number, startCharacter: number) => void;
+    onObjectBegin?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void;
+
     /**
      * Invoked when a property is encountered. The offset and length represent the location of the property name.
+     * The `JSONPath` created by the `pathSupplier` refers to the enclosing JSON object, it does not include the
+     * property name yet.
      */
-    onObjectProperty?: (property: string, offset: number, length: number, startLine: number, startCharacter: number) => void;
+    onObjectProperty?: (property: string, offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void;
     /**
      * Invoked when a closing brace is encountered and an object is completed. The offset and length represent the location of the closing brace.
      */
@@ -119,7 +133,7 @@ export interface JSONVisitor {
     /**
      * Invoked when an open bracket is encountered. The offset and length represent the location of the open bracket.
      */
-    onArrayBegin?: (offset: number, length: number, startLine: number, startCharacter: number) => void;
+    onArrayBegin?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void;
     /**
      * Invoked when a closing bracket is encountered. The offset and length represent the location of the closing bracket.
      */
@@ -127,7 +141,7 @@ export interface JSONVisitor {
     /**
      * Invoked when a literal value is encountered. The offset and length represent the location of the literal value.
      */
-    onLiteralValue?: (value: any, offset: number, length: number, startLine: number, startCharacter: number) => void;
+    onLiteralValue?: (value: any, offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void;
     /**
      * Invoked when a comma or colon separator is encountered. The offset and length represent the location of the separator.
      */
@@ -174,6 +188,10 @@ export declare function stripComments(text: string, replaceCh?: string): string;
  */
 export declare function getLocation(text: string, position: number): Location;
 
+/**
+ * A {@linkcode JSONPath} segment. Either a string representing an object property name
+ * or a number (starting at 0) for array indices.
+ */
 export declare type Segment = string | number;
 export declare type JSONPath = Segment[];
 export interface Location {

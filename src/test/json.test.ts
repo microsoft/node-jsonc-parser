@@ -7,37 +7,36 @@
 import * as assert from 'assert';
 import {
 	SyntaxKind, createScanner, parse, getLocation, Node, ParseError, parseTree, ParseErrorCode,
-	ParseOptions, Segment, findNodeAtLocation, getNodeValue, getNodePath, ScanError, Location, visit, JSONVisitor
+	ParseOptions, Segment, findNodeAtLocation, getNodeValue, getNodePath, ScanError, visit, JSONVisitor, JSONPath
 } from '../main';
-import { truncateSync } from 'fs';
 
 function assertKinds(text: string, ...kinds: SyntaxKind[]): void {
 	var scanner = createScanner(text);
 	var kind: SyntaxKind;
 	while ((kind = scanner.scan()) !== SyntaxKind.EOF) {
-		assert.equal(kind, kinds.shift());
-		assert.equal(scanner.getTokenError(), ScanError.None, text);
+		assert.strictEqual(kind, kinds.shift());
+		assert.strictEqual(scanner.getTokenError(), ScanError.None, text);
 	}
-	assert.equal(kinds.length, 0);
+	assert.strictEqual(kinds.length, 0);
 }
 function assertScanError(text: string, scanError: ScanError, ...kinds: SyntaxKind[]): void {
 	var scanner = createScanner(text);
 	scanner.scan();
-	assert.equal(scanner.getToken(), kinds.shift());
-	assert.equal(scanner.getTokenError(), scanError);
+	assert.strictEqual(scanner.getToken(), kinds.shift());
+	assert.strictEqual(scanner.getTokenError(), scanError);
 	var kind: SyntaxKind;
 	while ((kind = scanner.scan()) !== SyntaxKind.EOF) {
-		assert.equal(kind, kinds.shift());
+		assert.strictEqual(kind, kinds.shift());
 	}
-	assert.equal(kinds.length, 0);
+	assert.strictEqual(kinds.length, 0);
 }
 
 function assertValidParse(input: string, expected: any, options?: ParseOptions): void {
 	var errors: ParseError[] = [];
 	var actual = parse(input, errors, options);
 
-	assert.deepEqual([], errors);
-	assert.deepEqual(actual, expected);
+	assert.deepStrictEqual([], errors);
+	assert.deepStrictEqual(actual, expected);
 }
 
 function assertInvalidParse(input: string, expected: any, options?: ParseOptions): void {
@@ -45,18 +44,18 @@ function assertInvalidParse(input: string, expected: any, options?: ParseOptions
 	var actual = parse(input, errors, options);
 
 	assert(errors.length > 0);
-	assert.deepEqual(actual, expected);
+	assert.deepStrictEqual(actual, expected);
 }
 
 function assertTree(input: string, expected: any, expectedErrors: ParseError[] = []): void {
 	var errors: ParseError[] = [];
 	var actual = parseTree(input, errors);
 
-	assert.deepEqual(errors, expectedErrors);
+	assert.deepStrictEqual(errors, expectedErrors);
 	let checkParent = (node: Node | undefined) => {
 		if (node?.children) {
 			for (let child of node.children) {
-				assert.equal(node, child.parent);
+				assert.strictEqual(node, child.parent);
 				delete (<any>child).parent; // delete to avoid recursion in deep equal
 				checkParent(child);
 			}
@@ -64,7 +63,7 @@ function assertTree(input: string, expected: any, expectedErrors: ParseError[] =
 	};
 	checkParent(actual);
 
-	assert.deepEqual(actual, expected, JSON.stringify(actual));
+	assert.deepStrictEqual(actual, expected, JSON.stringify(actual));
 }
 
 interface VisitorCallback {
@@ -73,7 +72,8 @@ interface VisitorCallback {
 	startLine: number;
 	startCharacter: number;
 	arg?: any;
-};
+	path?: JSONPath;
+}
 interface VisitorError extends ParseError {
 	startLine: number;
 	startCharacter: number;
@@ -83,14 +83,16 @@ function assertVisit(input: string, expected: VisitorCallback[], expectedErrors:
 	let errors: VisitorError[] = [];
 	let actuals: VisitorCallback[] = [];
 	let noArgHalder = (id: keyof JSONVisitor) => (offset: number, length: number, startLine: number, startCharacter: number) => actuals.push({ id, text: input.substr(offset, length), startLine, startCharacter });
+	let noArgHalderWithPath = (id: keyof JSONVisitor) => (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => actuals.push({ id, text: input.substr(offset, length), startLine, startCharacter, path: pathSupplier() });
 	let oneArgHalder = (id: keyof JSONVisitor) => (arg: any, offset: number, length: number, startLine: number, startCharacter: number) => actuals.push({ id, text: input.substr(offset, length), startLine, startCharacter, arg });
+	let oneArgHalderWithPath = (id: keyof JSONVisitor) => (arg: any, offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => actuals.push({ id, text: input.substr(offset, length), startLine, startCharacter, arg, path: pathSupplier() });
 	visit(input, {
-		onObjectBegin: noArgHalder('onObjectBegin'),
-		onObjectProperty: oneArgHalder('onObjectProperty'),
+		onObjectBegin: noArgHalderWithPath('onObjectBegin'),
+		onObjectProperty: oneArgHalderWithPath('onObjectProperty'),
 		onObjectEnd: noArgHalder('onObjectEnd'),
-		onArrayBegin: noArgHalder('onArrayBegin'),
+		onArrayBegin: noArgHalderWithPath('onArrayBegin'),
 		onArrayEnd: noArgHalder('onArrayEnd'),
-		onLiteralValue: oneArgHalder('onLiteralValue'),
+		onLiteralValue: oneArgHalderWithPath('onLiteralValue'),
 		onSeparator: oneArgHalder('onSeparator'),
 		onComment: noArgHalder('onComment'),
 		onError: (error: ParseErrorCode, offset: number, length: number, startLine: number, startCharacter: number) => {
@@ -99,15 +101,15 @@ function assertVisit(input: string, expected: VisitorCallback[], expectedErrors:
 	}, {
 		disallowComments
 	});
-	assert.deepEqual(errors, expectedErrors);
-	assert.deepEqual(actuals, expected, JSON.stringify(actuals));
+	assert.deepStrictEqual(errors, expectedErrors);
+	assert.deepStrictEqual(actuals, expected, JSON.stringify(actuals));
 }
 
 function assertNodeAtLocation(input: Node | undefined, segments: Segment[], expected: any) {
 	let actual = input && findNodeAtLocation(input, segments);
 	assert.deepEqual(actual ? getNodeValue(actual) : void 0, expected);
 	if (actual) {
-		assert.deepEqual(getNodePath(actual), segments);
+		assert.deepStrictEqual(getNodePath(actual), segments);
 	}
 }
 
@@ -116,9 +118,9 @@ function assertLocation(input: string, expectedSegments: Segment[], expectedNode
 	input = input.substring(0, offset) + input.substring(offset + 1, input.length);
 	var actual = getLocation(input, offset);
 	assert(actual);
-	assert.deepEqual(actual.path, expectedSegments, input);
-	assert.equal(actual.previousNode && actual.previousNode.type, expectedNodeType, input);
-	assert.equal(actual.isAtPropertyKey, expectedCompleteProperty, input);
+	assert.deepStrictEqual(actual.path, expectedSegments, input);
+	assert.strictEqual(actual.previousNode && actual.previousNode.type, expectedNodeType, input);
+	assert.strictEqual(actual.isAtPropertyKey, expectedCompleteProperty, input);
 }
 
 function assertMatchesLocation(input: string, matchingSegments: Segment[], expectedResult = true): void {
@@ -126,7 +128,7 @@ function assertMatchesLocation(input: string, matchingSegments: Segment[], expec
 	input = input.substring(0, offset) + input.substring(offset + 1, input.length);
 	var actual = getLocation(input, offset);
 	assert(actual);
-	assert.equal(actual.matches(matchingSegments), expectedResult);
+	assert.strictEqual(actual.matches(matchingSegments), expectedResult);
 }
 
 suite('JSON', () => {
@@ -434,105 +436,189 @@ suite('JSON', () => {
 	});
 
 	test('visit: object', () => {
-		assertVisit('{ }', [{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 0 }, { id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 2 }]);
+		assertVisit('{ }', [
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 0, path: [] },
+			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 2 },
+		]);
 		assertVisit('{ "foo": "bar" }', [
-			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 0 },
-			{ id: 'onObjectProperty', text: '"foo"', startLine: 0, startCharacter: 2, arg: 'foo' },
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 0, path: [] },
+			{ id: 'onObjectProperty', text: '"foo"', startLine: 0, startCharacter: 2, arg: 'foo', path: [] },
 			{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 7, arg: ':' },
-			{ id: 'onLiteralValue', text: '"bar"', startLine: 0, startCharacter: 9, arg: 'bar' },
+			{ id: 'onLiteralValue', text: '"bar"', startLine: 0, startCharacter: 9, arg: 'bar', path: ['foo'] },
 			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 15 },
 		]);
 		assertVisit('{ "foo": { "goo": 3 } }', [
-			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 0 },
-			{ id: 'onObjectProperty', text: '"foo"', startLine: 0, startCharacter: 2, arg: 'foo' },
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 0, path: [] },
+			{ id: 'onObjectProperty', text: '"foo"', startLine: 0, startCharacter: 2, arg: 'foo', path: [] },
 			{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 7, arg: ':' },
-			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 9 },
-			{ id: 'onObjectProperty', text: '"goo"', startLine: 0, startCharacter: 11, arg: 'goo' },
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 9, path: ['foo'] },
+			{ id: 'onObjectProperty', text: '"goo"', startLine: 0, startCharacter: 11, arg: 'goo', path: ['foo'] },
 			{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 16, arg: ':' },
-			{ id: 'onLiteralValue', text: '3', startLine: 0, startCharacter: 18, arg: 3 },
+			{ id: 'onLiteralValue', text: '3', startLine: 0, startCharacter: 18, arg: 3, path: ['foo', 'goo'] },
 			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 20 },
 			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 22 },
 		]);
 	});
 
 	test('visit: array', () => {
-		assertVisit('[]', [{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 0 }, { id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 1 }]);
+		assertVisit('[]', [
+			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 0, path: [] },
+			{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 1 },
+		]);
 		assertVisit('[ true, null, [] ]', [
-			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 0 },
-			{ id: 'onLiteralValue', text: 'true', startLine: 0, startCharacter: 2, arg: true },
+			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 0, path: [] },
+			{ id: 'onLiteralValue', text: 'true', startLine: 0, startCharacter: 2, arg: true, path: [0] },
 			{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 6, arg: ',' },
-			{ id: 'onLiteralValue', text: 'null', startLine: 0, startCharacter: 8, arg: null },
+			{ id: 'onLiteralValue', text: 'null', startLine: 0, startCharacter: 8, arg: null, path: [1] },
 			{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 12, arg: ',' },
-			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 14 },
+			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 14, path: [2] },
 			{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 15 },
 			{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 17 },
 		]);
 		assertVisit('[\r\n0,\r\n1,\r\n2\r\n]', [
-			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 0 },
-			{ id: 'onLiteralValue', text: '0', startLine: 1, startCharacter: 0, arg: 0 },
+			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 0, path: [] },
+			{ id: 'onLiteralValue', text: '0', startLine: 1, startCharacter: 0, arg: 0, path: [0] },
 			{ id: 'onSeparator', text: ',', startLine: 1, startCharacter: 1, arg: ',' },
-			{ id: 'onLiteralValue', text: '1', startLine: 2, startCharacter: 0, arg: 1 },
+			{ id: 'onLiteralValue', text: '1', startLine: 2, startCharacter: 0, arg: 1, path: [1] },
 			{ id: 'onSeparator', text: ',', startLine: 2, startCharacter: 1, arg: ',' },
-			{ id: 'onLiteralValue', text: '2', startLine: 3, startCharacter: 0, arg: 2 },
-			{ id: 'onArrayEnd', text: ']', startLine: 4, startCharacter: 0 }]);
+			{ id: 'onLiteralValue', text: '2', startLine: 3, startCharacter: 0, arg: 2, path: [2] },
+			{ id: 'onArrayEnd', text: ']', startLine: 4, startCharacter: 0 },
+		]);
+	});
+
+	test('visit: object & array', () => {
+		assertVisit('[ { "p1": [ { "p11": 1, "p12": [ true, [ false, 2 ] ] } ] } ]', [
+			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 0, path: [] },
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 2, path: [0] },
+			{ id: 'onObjectProperty', text: '"p1"', startLine: 0, startCharacter: 4, arg: 'p1', path: [0] },
+			{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 8, arg: ':' },
+			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 10, path: [0, 'p1'] },
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 12, path: [0, 'p1', 0] },
+			{ id: 'onObjectProperty', text: '"p11"', startLine: 0, startCharacter: 14, arg: 'p11', path: [0, 'p1', 0] },
+			{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 19, arg: ':' },
+			{ id: 'onLiteralValue', text: '1', startLine: 0, startCharacter: 21, arg: 1, path: [0, 'p1', 0, 'p11'] },
+			{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 22, arg: ',' },
+			{ id: 'onObjectProperty', text: '"p12"', startLine: 0, startCharacter: 24, arg: 'p12', path: [0, 'p1', 0] },
+			{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 29, arg: ':' },
+			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 31, path: [0, 'p1', 0, 'p12'] },
+			{ id: 'onLiteralValue', text: 'true', startLine: 0, startCharacter: 33, arg: true, path: [0, 'p1', 0, 'p12', 0] },
+			{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 37, arg: ',' },
+			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 39, path: [0, 'p1', 0, 'p12', 1] },
+			{ id: 'onLiteralValue', text: 'false', startLine: 0, startCharacter: 41, arg: false, path: [0, 'p1', 0, 'p12', 1, 0] },
+			{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 46, arg: ',' },
+			{ id: 'onLiteralValue', text: '2', startLine: 0, startCharacter: 48, arg: 2, path: [0, 'p1', 0, 'p12', 1, 1] },
+			{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 50 },
+			{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 52 },
+			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 54 },
+			{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 56 },
+			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 58 },
+			{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 60 },
+		]);
 	});
 
 	test('visit: comment', () => {
 		assertVisit('/* g */ { "foo": //f\n"bar" }', [
 			{ id: 'onComment', text: '/* g */', startLine: 0, startCharacter: 0 },
-			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 8 },
-			{ id: 'onObjectProperty', text: '"foo"', startLine: 0, startCharacter: 10, arg: 'foo' },
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 8, path: [] },
+			{ id: 'onObjectProperty', text: '"foo"', startLine: 0, startCharacter: 10, arg: 'foo', path: [] },
 			{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 15, arg: ':' },
 			{ id: 'onComment', text: '//f', startLine: 0, startCharacter: 17 },
-			{ id: 'onLiteralValue', text: '"bar"', startLine: 1, startCharacter: 0, arg: 'bar' },
+			{ id: 'onLiteralValue', text: '"bar"', startLine: 1, startCharacter: 0, arg: 'bar', path: ['foo'] },
 			{ id: 'onObjectEnd', text: '}', startLine: 1, startCharacter: 6 },
 		]);
 		assertVisit('/* g\r\n */ { "foo": //f\n"bar" }', [
 			{ id: 'onComment', text: '/* g\r\n */', startLine: 0, startCharacter: 0 },
-			{ id: 'onObjectBegin', text: '{', startLine: 1, startCharacter: 4 },
-			{ id: 'onObjectProperty', text: '"foo"', startLine: 1, startCharacter: 6, arg: 'foo' },
+			{ id: 'onObjectBegin', text: '{', startLine: 1, startCharacter: 4, path: [] },
+			{ id: 'onObjectProperty', text: '"foo"', startLine: 1, startCharacter: 6, arg: 'foo', path: [] },
 			{ id: 'onSeparator', text: ':', startLine: 1, startCharacter: 11, arg: ':' },
 			{ id: 'onComment', text: '//f', startLine: 1, startCharacter: 13 },
-			{ id: 'onLiteralValue', text: '"bar"', startLine: 2, startCharacter: 0, arg: 'bar' },
+			{ id: 'onLiteralValue', text: '"bar"', startLine: 2, startCharacter: 0, arg: 'bar', path: ['foo'] },
 			{ id: 'onObjectEnd', text: '}', startLine: 2, startCharacter: 6 },
 		]);
 		assertVisit('/* g\n */ { "foo": //f\n"bar"\n}',
 			[
-				{ id: 'onObjectBegin', text: '{', startLine: 1, startCharacter: 4 },
-				{ id: 'onObjectProperty', text: '"foo"', startLine: 1, startCharacter: 6, arg: 'foo' },
+				{ id: 'onObjectBegin', text: '{', startLine: 1, startCharacter: 4, path: [] },
+				{ id: 'onObjectProperty', text: '"foo"', startLine: 1, startCharacter: 6, arg: 'foo', path: [] },
 				{ id: 'onSeparator', text: ':', startLine: 1, startCharacter: 11, arg: ':' },
-				{ id: 'onLiteralValue', text: '"bar"', startLine: 2, startCharacter: 0, arg: 'bar' },
+				{ id: 'onLiteralValue', text: '"bar"', startLine: 2, startCharacter: 0, arg: 'bar', path: ['foo'] },
 				{ id: 'onObjectEnd', text: '}', startLine: 3, startCharacter: 0 },
 			],
 			[
 				{ error: ParseErrorCode.InvalidCommentToken, offset: 0, length: 8, startLine: 0, startCharacter: 0 },
 				{ error: ParseErrorCode.InvalidCommentToken, offset: 18, length: 3, startLine: 1, startCharacter: 13 },
 			],
-			true);
+			true
+		);
+	});
+
+	test('visit: malformed', () => {
+		// Note: The expected visitor calls below heavily depend on implementation details; they don't
+		// dictate how exactly malformed JSON should be parsed
+		assertVisit('[ { "a", "b": [] 1, "c" [ 1 2 ], true: "d":, "e": }, 2, 3 4 ]',
+			[
+				{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 0, path: [] },
+				{ id: 'onObjectBegin', text: "{", startLine: 0, startCharacter: 2, path: [0] },
+				{ id: 'onObjectProperty', text: '"a"', startLine: 0, startCharacter: 4, arg: 'a', path: [0] },
+				{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 7, arg: ',' },
+				{ id: 'onObjectProperty', text: '"b"', startLine: 0, startCharacter: 9, arg: 'b', path: [0] },
+				{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 12, arg: ':' },
+				{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 14, path: [0, 'b'] },
+				{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 15 },
+				{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 18, arg: ',' },
+				{ id: 'onObjectProperty', text: '"c"', startLine: 0, startCharacter: 20, arg: 'c', path: [0] },
+				{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 31, arg: ',' },
+				{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 43, arg: ',' },
+				{ id: 'onObjectProperty', text: '"e"', startLine: 0, startCharacter: 45, arg: 'e', path: [0] },
+				{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 48, arg: ':' },
+				{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 50 },
+				{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 51, arg: ',' },
+				{ id: 'onLiteralValue', text: '2', startLine: 0, startCharacter: 53, arg: 2, path: [1] },
+				{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 54, arg: ',' },
+				{ id: 'onLiteralValue', text: '3', startLine: 0, startCharacter: 56, arg: 3, path: [2] },
+				{ id: 'onLiteralValue', text: '4', startLine: 0, startCharacter: 58, arg: 4, path: [3] },
+				{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 60 },
+			],
+			[
+				{ error: ParseErrorCode.ColonExpected, offset: 7, length: 1, startLine: 0, startCharacter: 7 },
+				{ error: ParseErrorCode.CommaExpected, offset: 17, length: 1, startLine: 0, startCharacter: 17 },
+				{ error: ParseErrorCode.PropertyNameExpected, offset: 17, length: 1, startLine: 0, startCharacter: 17 },
+				{ error: ParseErrorCode.ValueExpected, offset: 18, length: 1, startLine: 0, startCharacter: 18 },
+				{ error: ParseErrorCode.ColonExpected, offset: 24, length: 1, startLine: 0, startCharacter: 24 },
+				{ error: ParseErrorCode.PropertyNameExpected, offset: 33, length: 4, startLine: 0, startCharacter: 33 },
+				{ error: ParseErrorCode.ValueExpected, offset: 43, length: 1, startLine: 0, startCharacter: 43 },
+				{ error: ParseErrorCode.ValueExpected, offset: 50, length: 1, startLine: 0, startCharacter: 50 },
+				{ error: ParseErrorCode.CommaExpected, offset: 58, length: 1, startLine: 0, startCharacter: 58 },
+			]
+		);
 	});
 
 	test('visit: incomplete', () => {
-		assertVisit('{"prop1":"foo","prop2":"foo2","prop3":{"prp1":{""}}}', [
-			{ id: 'onObjectBegin', text: "{", startLine: 0, startCharacter: 0 },
-			{ id: 'onObjectProperty', text: '"prop1"', startLine: 0, startCharacter: 1, arg: "prop1" },
-			{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 8, arg: ":" },
-			{ id: 'onLiteralValue', text: '"foo"', startLine: 0, startCharacter: 9, arg: "foo" },
-			{ id: 'onSeparator', text: ",", startLine: 0, startCharacter: 14, arg: "," },
-			{ id: 'onObjectProperty', text: '"prop2"', startLine: 0, startCharacter: 15, arg: "prop2" },
-			{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 22, arg: ":" },
-			{ id: 'onLiteralValue', text: '"foo2"', startLine: 0, startCharacter: 23, arg: "foo2" },
-			{ id: 'onSeparator', text: ",", startLine: 0, startCharacter: 29, arg: "," },
-			{ id: 'onObjectProperty', text: '"prop3"', startLine: 0, startCharacter: 30, arg: "prop3" },
-			{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 37, arg: ":" },
-			{ id: 'onObjectBegin', text: "{", startLine: 0, startCharacter: 38 },
-			{ id: 'onObjectProperty', text: '"prp1"', startLine: 0, startCharacter: 39, arg: "prp1" },
-			{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 45, arg: ":" },
-			{ id: 'onObjectBegin', text: "{", startLine: 0, startCharacter: 46 },
-			{ id: 'onObjectProperty', text: '""', startLine: 0, startCharacter: 47, arg: "" },
-			{ id: 'onObjectEnd', text: "}", startLine: 0, startCharacter: 49 },
-			{ id: 'onObjectEnd', text: "}", startLine: 0, startCharacter: 50 },
-			{ id: 'onObjectEnd', text: "}", startLine: 0, startCharacter: 51 }
-		], [{ error: ParseErrorCode.ColonExpected, offset: 49, length: 1, startLine: 0, startCharacter: 49 }]);
+		assertVisit('{"prop1":"foo","prop2":"foo2","prop3":{"prp1":{""}}}',
+			[
+				{ id: 'onObjectBegin', text: "{", startLine: 0, startCharacter: 0, path: [] },
+				{ id: 'onObjectProperty', text: '"prop1"', startLine: 0, startCharacter: 1, arg: 'prop1', path: [] },
+				{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 8, arg: ":" },
+				{ id: 'onLiteralValue', text: '"foo"', startLine: 0, startCharacter: 9, arg: 'foo', path: ['prop1'] },
+				{ id: 'onSeparator', text: ",", startLine: 0, startCharacter: 14, arg: "," },
+				{ id: 'onObjectProperty', text: '"prop2"', startLine: 0, startCharacter: 15, arg: 'prop2', path: [] },
+				{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 22, arg: ":" },
+				{ id: 'onLiteralValue', text: '"foo2"', startLine: 0, startCharacter: 23, arg: 'foo2', path: ['prop2'] },
+				{ id: 'onSeparator', text: ",", startLine: 0, startCharacter: 29, arg: "," },
+				{ id: 'onObjectProperty', text: '"prop3"', startLine: 0, startCharacter: 30, arg: 'prop3', path: [] },
+				{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 37, arg: ":" },
+				{ id: 'onObjectBegin', text: "{", startLine: 0, startCharacter: 38, path: ['prop3'] },
+				{ id: 'onObjectProperty', text: '"prp1"', startLine: 0, startCharacter: 39, arg: 'prp1', path: ['prop3'] },
+				{ id: 'onSeparator', text: ":", startLine: 0, startCharacter: 45, arg: ':' },
+				{ id: 'onObjectBegin', text: "{", startLine: 0, startCharacter: 46, path: ['prop3', 'prp1'] },
+				{ id: 'onObjectProperty', text: '""', startLine: 0, startCharacter: 47, arg: '', path: ['prop3', 'prp1'] },
+				{ id: 'onObjectEnd', text: "}", startLine: 0, startCharacter: 49 },
+				{ id: 'onObjectEnd', text: "}", startLine: 0, startCharacter: 50 },
+				{ id: 'onObjectEnd', text: "}", startLine: 0, startCharacter: 51 },
+			],
+			[
+				{ error: ParseErrorCode.ColonExpected, offset: 49, length: 1, startLine: 0, startCharacter: 49 },
+			]
+		);
 
 		assertTree('{"prop1":"foo","prop2":"foo2","prop3":{"prp1":{""}}}', {
 			type: 'object', offset: 0, length: 52, children: [
