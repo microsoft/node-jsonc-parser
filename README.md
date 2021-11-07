@@ -219,22 +219,18 @@ export function getNodePath(node: Node): JSONPath;
 export function getNodeValue(node: Node): any;
 
 /**
- * Computes the edits needed to format a JSON document. 
+ * Computes the edit operations needed to format a JSON document.
  * 
  * @param documentText The input text 
  * @param range The range to format or `undefined` to format the full content
  * @param options The formatting options
- * @returns A list of edit operations describing the formatting changes to the original document. Edits can be either inserts, replacements or
- * removals of text segments. All offsets refer to the original state of the document. No two edits must change or remove the same range of
- * text in the original document. However, multiple edits can have
- * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
- * To apply edits to an input, you can use `applyEdits`
+ * @returns The edit operations describing the formatting changes to the original document following the format described in {@linkcode EditResult}.
+ * To apply the edit operations to the input, use {@linkcode applyEdits}.
  */
-export function format(documentText: string, range: Range, options: FormattingOptions): Edit[];
-
+export function format(documentText: string, range: Range, options: FormattingOptions): EditResult;
 
 /**
- * Computes the edits needed to modify a value in the JSON document.
+ * Computes the edit operations needed to modify a value in the JSON document.
  * 
  * @param documentText The input text 
  * @param path The path of the value to change. The path represents either to the document root, a property or an array item.
@@ -242,18 +238,31 @@ export function format(documentText: string, range: Range, options: FormattingOp
  * @param value The new value for the specified property or item. If the value is undefined,
  * the property or item will be removed.
  * @param options Options
- * @returns A list of edit operations describing the formatting changes to the original document. Edits can be either inserts, replacements or
- * removals of text segments. All offsets refer to the original state of the document. No two edits must change or remove the same range of
- * text in the original document. However, multiple edits can have
- * the same offset, for example multiple inserts, or an insert followed by a remove or replace. The order in the array defines which edit is applied first.
- * To apply edits to an input, you can use `applyEdits`
+ * @returns The edit operations describing the changes to the original document, following the format described in {@linkcode EditResult}.
+ * To apply the edit operations to the input, use {@linkcode applyEdits}.
  */
-export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): Edit[];
+export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): EditResult;
 
 /**
- * Applies edits to a input string.
+ * Applies edits to an input string.
+ * @param text The input text 
+ * @param edits Edit operations following the format described in {@linkcode EditResult}.
+ * @returns The text with the applied edits.
+ * @throws An error if the edit operations are not well-formed as described in {@linkcode EditResult}.
  */
-export function applyEdits(text: string, edits: Edit[]): string;
+export function applyEdits(text: string, edits: EditResult): string;
+
+/**
+ * An edit result describes a textual edit operation. It is the result of a {@linkcode format} and {@linkcode modify} operation.
+ * It consist of one or more edits describing insertions, replacements or removals of text segments.
+ * * The offsets of the edits refer to the original state of the document.
+ * * No two edits change or remove the same range of text in the original document.
+ * * Multiple edits can have the same offset if they are multiple inserts, or an insert followed by a remove or replace.
+ * * The order in the array defines which edit is applied first.
+ * To apply an edit result use {@linkcode applyEdits}.
+ * In general multiple EditResults must not be concatenated because they might impact each other, producing incorrect or malformed JSON data.
+ */
+export type EditResult = Edit[];
 
 /**
  * Represents a text modification
@@ -282,11 +291,14 @@ export interface Range {
      */
     offset: number;
     /**
-     * The length of the range. Must not be negative.  
+     * The length of the range. Must not be negative.
      */
     length: number;
 }
 
+/** 
+ * Options used by {@linkcode format} when computing the formatting edit operations
+ */
 export interface FormattingOptions {
     /**
      * If indentation is based on spaces (`insertSpaces` = true), then what is the number of spaces that make an indent?
@@ -302,6 +314,24 @@ export interface FormattingOptions {
     eol: string;
 }
 
+/** 
+ * Options used by {@linkcode modify} when computing the modification edit operations
+ */
+export interface ModificationOptions {
+    /**
+     * Formatting options. If undefined, the newly inserted code will be inserted unformatted.
+    */
+    formattingOptions?: FormattingOptions;
+    /**
+     * Default false. If `JSONPath` refers to an index of an array and `isArrayInsertion` is `true`, then
+     * {@linkcode modify} will insert a new item at that location instead of overwriting its contents.
+     */
+    isArrayInsertion?: boolean;
+    /**
+     * Optional function to define the insertion index given an existing list of properties.
+     */
+    getInsertionIndex?: (properties: string[]) => number;
+}
 ```
 
 

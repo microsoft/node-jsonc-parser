@@ -275,14 +275,15 @@ export interface JSONVisitor {
 	 */
 	onError?: (error: ParseErrorCode, offset: number, length: number, startLine: number, startCharacter: number) => void;
 }
+
 /**
- * An edit result describes a textual edit operation. It is the result of a `format` and `modify` operation. 
+ * An edit result describes a textual edit operation. It is the result of a {@linkcode format} and {@linkcode modify} operation.
  * It consist of one or more edits describing insertions, replacements or removals of text segments.
- * * The offsets of the edits refer to the original state of the document. 
+ * * The offsets of the edits refer to the original state of the document.
  * * No two edits change or remove the same range of text in the original document.
  * * Multiple edits can have the same offset if they are multiple inserts, or an insert followed by a remove or replace.
  * * The order in the array defines which edit is applied first.
- * To apply an edit result use `applyEdits`.
+ * To apply an edit result use {@linkcode applyEdits}.
  * In general multiple EditResults must not be concatenated because they might impact each other, producing incorrect or malformed JSON data.
  */
 export type EditResult = Edit[];
@@ -314,11 +315,14 @@ export interface Range {
 	 */
 	offset: number;
 	/**
-	 * The length of the range. Must not be negative.  
+	 * The length of the range. Must not be negative.
 	 */
 	length: number;
 }
 
+/** 
+ * Options used by {@linkcode format} when computing the formatting edit operations
+ */
 export interface FormattingOptions {
 	/**
 	 * If indentation is based on spaces (`insertSpaces` = true), the number of spaces that make an indent.
@@ -339,20 +343,20 @@ export interface FormattingOptions {
 }
 
 /**
- * Computes the edits needed to format a JSON document. 
+ * Computes the edit operations needed to format a JSON document.
  * 
  * @param documentText The input text 
  * @param range The range to format or `undefined` to format the full content
  * @param options The formatting options
  * @returns The edit operations describing the formatting changes to the original document following the format described in {@linkcode EditResult}.
- * To apply the edit operation to the input, use `applyEdits`.
+ * To apply the edit operations to the input, use {@linkcode applyEdits}.
  */
 export function format(documentText: string, range: Range | undefined, options: FormattingOptions): EditResult {
 	return formatter.format(documentText, range, options);
 }
 
 /** 
- * Options used when computing the modification edits
+ * Options used by {@linkcode modify} when computing the modification edit operations
  */
 export interface ModificationOptions {
 	/**
@@ -360,8 +364,8 @@ export interface ModificationOptions {
 	*/
 	formattingOptions?: FormattingOptions;
 	/**
-	 * Default false. If `JSONPath` refers to an index of an array and {@property isArrayInsertion} is `true`, then
-	 * {@function modify} will insert a new item at that location instead of overwriting its contents.
+	 * Default false. If `JSONPath` refers to an index of an array and `isArrayInsertion` is `true`, then
+	 * {@linkcode modify} will insert a new item at that location instead of overwriting its contents.
 	 */
 	isArrayInsertion?: boolean;
 	/**
@@ -379,8 +383,8 @@ export interface ModificationOptions {
  * @param value The new value for the specified property or item. If the value is undefined,
  * the property or item will be removed.
  * @param options Options
- * @returns The edit operation describing the changes to the original document, following the format described in {@linkcode EditResult}.
- * To apply the edit operation to the input, use `applyEdits`.
+ * @returns The edit operations describing the changes to the original document, following the format described in {@linkcode EditResult}.
+ * To apply the edit operations to the input, use {@linkcode applyEdits}.
  */
 export function modify(text: string, path: JSONPath, value: any, options: ModificationOptions): EditResult {
 	return edit.setProperty(text, path, value, options);
@@ -389,9 +393,9 @@ export function modify(text: string, path: JSONPath, value: any, options: Modifi
 /**
  * Applies edits to an input string.
  * @param text The input text 
- * @param edits An edit operation following the format described in {@linkcode EditResult}.
+ * @param edits Edit operations following the format described in {@linkcode EditResult}.
  * @returns The text with the applied edits.
- * @throws An error if the edit operation is not well-formed as described in {@linkcode EditResult}.
+ * @throws An error if the edit operations are not well-formed as described in {@linkcode EditResult}.
  */
 export function applyEdits(text: string, edits: EditResult): string {
 	for (let i = edits.length - 1; i >= 0; i--) {
