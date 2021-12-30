@@ -386,20 +386,29 @@ export function findNodeAtOffset(node: Node, offset: number, includeRightBound =
 export function visit(text: string, visitor: JSONVisitor, options: ParseOptions = ParseOptions.DEFAULT): any {
 
 	const _scanner = createScanner(text, false);
+	// Important: Only pass copies of this to visitor functions to prevent accidental modification, and
+	// to not affect visitor functions which stored a reference to a previous JSONPath
+	const _jsonPath: JSONPath = [];
 
 	function toNoArgVisit(visitFunction?: (offset: number, length: number, startLine: number, startCharacter: number) => void): () => void {
 		return visitFunction ? () => visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
 	}
+	function toNoArgVisitWithPath(visitFunction?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void): () => void {
+		return visitFunction ? () => visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter(), () => _jsonPath.slice()) : () => true;
+	}
 	function toOneArgVisit<T>(visitFunction?: (arg: T, offset: number, length: number, startLine: number, startCharacter: number) => void): (arg: T) => void {
 		return visitFunction ? (arg: T) => visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
 	}
+	function toOneArgVisitWithPath<T>(visitFunction?: (arg: T, offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void): (arg: T) => void {
+		return visitFunction ? (arg: T) => visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter(), () => _jsonPath.slice()) : () => true;
+	}
 
-	const onObjectBegin = toNoArgVisit(visitor.onObjectBegin),
-		onObjectProperty = toOneArgVisit(visitor.onObjectProperty),
+	const onObjectBegin = toNoArgVisitWithPath(visitor.onObjectBegin),
+		onObjectProperty = toOneArgVisitWithPath(visitor.onObjectProperty),
 		onObjectEnd = toNoArgVisit(visitor.onObjectEnd),
-		onArrayBegin = toNoArgVisit(visitor.onArrayBegin),
+		onArrayBegin = toNoArgVisitWithPath(visitor.onArrayBegin),
 		onArrayEnd = toNoArgVisit(visitor.onArrayEnd),
-		onLiteralValue = toOneArgVisit(visitor.onLiteralValue),
+		onLiteralValue = toOneArgVisitWithPath(visitor.onLiteralValue),
 		onSeparator = toOneArgVisit(visitor.onSeparator),
 		onComment = toNoArgVisit(visitor.onComment),
 		onError = toOneArgVisit(visitor.onError);
@@ -474,6 +483,8 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 			onLiteralValue(value);
 		} else {
 			onObjectProperty(value);
+			// add property name afterwards
+			_jsonPath.push(value);
 		}
 		scanNext();
 		return true;
@@ -524,6 +535,7 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 		} else {
 			handleError(ParseErrorCode.ColonExpected, [], [SyntaxKind.CloseBraceToken, SyntaxKind.CommaToken]);
 		}
+		_jsonPath.pop(); // remove processed property name
 		return true;
 	}
 
@@ -562,6 +574,7 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 	function parseArray(): boolean {
 		onArrayBegin();
 		scanNext(); // consume open bracket
+		let isFirstElement = true;
 
 		let needsComma = false;
 		while (_scanner.getToken() !== SyntaxKind.CloseBracketToken && _scanner.getToken() !== SyntaxKind.EOF) {
@@ -577,12 +590,21 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 			} else if (needsComma) {
 				handleError(ParseErrorCode.CommaExpected, [], []);
 			}
+			if (isFirstElement) {
+				_jsonPath.push(0);
+				isFirstElement = false;
+			} else {
+				(_jsonPath[_jsonPath.length - 1] as number)++;
+			}
 			if (!parseValue()) {
 				handleError(ParseErrorCode.ValueExpected, [], [SyntaxKind.CloseBracketToken, SyntaxKind.CommaToken]);
 			}
 			needsComma = true;
 		}
 		onArrayEnd();
+		if (!isFirstElement) {
+			_jsonPath.pop(); // remove array index
+		}
 		if (_scanner.getToken() !== SyntaxKind.CloseBracketToken) {
 			handleError(ParseErrorCode.CloseBracketExpected, [SyntaxKind.CloseBracketToken], []);
 		} else {
