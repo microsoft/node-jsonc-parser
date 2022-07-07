@@ -1,3 +1,7 @@
+3.1.0 2022-07-07
+==================
+  * Added the possibility to have multi-line formatting
+
 3.0.0 2020-11-13
 ==================
   * fixed API spec for `parseTree`. Can return `undefine` for empty input.

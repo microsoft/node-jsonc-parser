@@ -10,7 +10,7 @@ import { Range } from '../main';
 
 suite('JSON - formatter', () => {
 
-	function format(content: string, expected: string, insertSpaces = true, insertFinalNewline = false) {
+	function format(content: string, expected: string, insertSpaces = true, insertFinalNewline = false, keepLines = false) {
 		let range: Range | undefined = void 0;
 		var rangeStart = content.indexOf('|');
 		var rangeEnd = content.lastIndexOf('|');
@@ -19,7 +19,7 @@ suite('JSON - formatter', () => {
 			range = { offset: rangeStart, length: rangeEnd - rangeStart };
 		}
 
-		var edits = Formatter.format(content, range, { tabSize: 2, insertSpaces, insertFinalNewline, eol: '\n' });
+		var edits = Formatter.format(content, range, { tabSize: 2, insertSpaces, insertFinalNewline, eol: '\n', keepLines});
 
 		let lastEditOffset = content.length;
 		for (let i = edits.length - 1; i >= 0; i--) {
@@ -517,5 +517,194 @@ suite('JSON - formatter', () => {
 		].join('\n');
 
 		format(content, expected, undefined, true);
+	});
+
+
+	// tests added for the keepLines feature
+
+	test('one-line array', () => {
+		var content = [
+			'{ "array": [1,2,3]',
+		    '}'
+		].join('\n');
+
+		var expected = [
+			'{ "array": [ 1, 2, 3 ]',
+		    '}'
+		].join('\n');
+
+		format(content, expected, true, false, true);
+	});
+
+	test('multi-line array', () => {
+		var content = [
+			'{"array":',
+			' [1,2,',
+			' 3]',
+		    '}'
+		].join('\n');
+
+		var expected = [
+			'{ "array":',
+			'  [ 1, 2,',
+			'    3 ]',
+		    '}'
+		].join('\n');
+ 
+		format(content, expected, true, false, true);
+	});
+
+	test('one-line object', () => {
+		var content = [
+			'{"settings": // This is some text',
+			'{"foo": 1}',
+			'}'
+		].join('\n');
+
+		var expected = [
+			'{ "settings": // This is some text',
+			'  { "foo": 1 }',
+			'}'
+		].join('\n');
+
+		format(content, expected, true, false, true);
+	});
+
+	test('multiple line breaks', () => {
+		var content = [
+			'{"settings":',
+			'',
+			'',
+			'',
+			'{"foo": 1}',
+			'}'
+		].join('\n');
+
+		var expected = [
+			'{ "settings":',
+			'',
+			'',
+			'',
+			'  { "foo": 1 }',
+			'}'
+		].join('\n');
+
+		format(content, expected, true, false, true);
+	});
+
+	test('multiple line breaks and block comment', () => {
+		var content = [
+			'{"settings":',
+			'',
+			'',
+			'{"foo": 1} /* this is a multiline',
+			'comment */',
+			'}'
+		].join('\n');
+
+		var expected = [
+			'{ "settings":',
+			'',
+			'',
+			'  { "foo": 1 } /* this is a multiline',
+			'comment */',
+			'}'
+		].join('\n');
+
+		format(content, expected, true, false, true);
+	});
+
+	test('colon on its own line', () => {
+		var content = [
+			'{"settings"',
+			':',
+			'{"foo"',
+			':',
+			'1}',
+			'}'
+		].join('\n');
+
+		var expected = [
+			'{ "settings"',
+			'  :',
+			'  { "foo"',
+			'    :',
+			'    1 }',
+			'}'
+		].join('\n');
+
+		format(content, expected, true, false, true);
+	});
+
+	test('nested multi-line array', () => {
+		var content = [
+			'{',
+			'',
+			'{',
+			'',
+			'"array"   : [1, 2',
+			'3, 4]',
+			'}',
+			'}'
+		].join('\n');
+
+		var expected = [
+			'{',
+			'',
+			'  {',
+			'',
+			'    "array": [ 1, 2',
+			'      3, 4 ]',
+			'  }',
+			'}'
+		].join('\n');
+
+		format(content, expected, true, false, true);
+	});
+
+	test('empty arrays or objects', () => {
+		var content = [
+			'{',
+			'',
+			'}',
+			'',
+			'{',
+			'[',
+			']',
+			'}'
+		].join('\n');
+
+		var expected = [
+			'{',
+			'',
+			'}',
+			'',
+			'{',
+			'  [',
+			'  ]',
+			'}'
+		].join('\n');
+
+		format(content, expected, true, false, true);
+	});
+
+	test('multiple empty lines at the end', () => {
+		var content = [
+			'{',
+			'}',
+			'',
+			'',
+			''
+		].join('\n');
+
+		var expected = [
+			'{',
+			'}',
+			'',
+			'',
+			''
+		].join('\n');
+
+		format(content, expected, true, false, true);
 	});
 });

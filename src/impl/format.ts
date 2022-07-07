@@ -36,6 +36,7 @@ export function format(documentText: string, range: Range | undefined, options: 
 	}
 	let eol = getEOL(options, documentText);
 
+	let numberLineBreaks = 0;
 	let lineBreak = false;
 	let indentLevel = 0;
 	let indentValue: string;
@@ -48,14 +49,23 @@ export function format(documentText: string, range: Range | undefined, options: 
 	let scanner = createScanner(formatText, false);
 	let hasError = false;
 
-	function newLineAndIndent(): string {
-		return eol + repeat(indentValue, initialIndentLevel + indentLevel);
+	function newLinesAndIndent(): string {
+		if (numberLineBreaks > 0) {
+			return repeat(eol, numberLineBreaks) + repeat(indentValue, initialIndentLevel + indentLevel);
+		} else {
+			return eol + repeat(indentValue, initialIndentLevel + indentLevel);
+		}
 	}
+
 	function scanNext(): SyntaxKind {
 		let token = scanner.scan();
+		numberLineBreaks = 0;
 		lineBreak = false;
 		while (token === SyntaxKind.Trivia || token === SyntaxKind.LineBreakTrivia) {
 			lineBreak = lineBreak || (token === SyntaxKind.LineBreakTrivia);
+			if (token === SyntaxKind.LineBreakTrivia && options.keepLines) {
+				numberLineBreaks += 1;
+			}
 			token = scanner.scan();
 		}
 		hasError = token === SyntaxKind.Unknown || scanner.getTokenError() !== ScanError.None;
@@ -88,76 +98,151 @@ export function format(documentText: string, range: Range | undefined, options: 
 			addEdit(' ', firstTokenEnd, commentTokenStart);
 			firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
 			needsLineBreak = secondToken === SyntaxKind.LineCommentTrivia;
-			replaceContent = needsLineBreak ? newLineAndIndent() : '';
+			replaceContent = needsLineBreak ? newLinesAndIndent() : '';
 			secondToken = scanNext();
 		}
 
 		if (secondToken === SyntaxKind.CloseBraceToken) {
-			if (firstToken !== SyntaxKind.OpenBraceToken) {
+			if (options.keepLines) {
+				if (firstToken !== SyntaxKind.OpenBraceToken) { indentLevel--; };
+				if (lineBreak) {
+					replaceContent = newLinesAndIndent();
+				} else {
+					replaceContent = ' ';
+				}
+			} else if (!options.keepLines && firstToken !== SyntaxKind.OpenBraceToken){
 				indentLevel--;
-				replaceContent = newLineAndIndent();
+				replaceContent = newLinesAndIndent();
 			}
 		} else if (secondToken === SyntaxKind.CloseBracketToken) {
-			if (firstToken !== SyntaxKind.OpenBracketToken) {
+			if (options.keepLines) {
+				if(firstToken !== SyntaxKind.OpenBracketToken) {indentLevel--;};
+				if (lineBreak) {
+					replaceContent = newLinesAndIndent();
+				} else {
+					replaceContent = ' ';
+				}
+			}
+			else if (firstToken !== SyntaxKind.OpenBracketToken) {
 				indentLevel--;
-				replaceContent = newLineAndIndent();
+				replaceContent = newLinesAndIndent();
 			}
 		} else {
+
 			switch (firstToken) {
 				case SyntaxKind.OpenBracketToken:
 				case SyntaxKind.OpenBraceToken:
 					indentLevel++;
-					replaceContent = newLineAndIndent();
+					if (options.keepLines) {
+						if (lineBreak) {
+							replaceContent = newLinesAndIndent();
+						} else {
+							replaceContent = " ";
+						}
+					} else {
+						replaceContent = newLinesAndIndent();
+					}
 					break;
 				case SyntaxKind.CommaToken:
+					if(options.keepLines) {
+						if (lineBreak) {
+							replaceContent = newLinesAndIndent();
+						} else {
+							replaceContent = " ";
+						}
+					} else {
+						replaceContent = newLinesAndIndent();
+					}
+					break;
 				case SyntaxKind.LineCommentTrivia:
-					replaceContent = newLineAndIndent();
+					replaceContent = newLinesAndIndent();
 					break;
 				case SyntaxKind.BlockCommentTrivia:
 					if (lineBreak) {
-						replaceContent = newLineAndIndent();
+						replaceContent = newLinesAndIndent();
 					} else if (!needsLineBreak) {
-						// symbol following comment on the same line: keep on same line, separate with ' '
 						replaceContent = ' ';
 					}
 					break;
 				case SyntaxKind.ColonToken:
-					if (!needsLineBreak) {
-						replaceContent = ' ';
+					if (options.keepLines) {
+						if (lineBreak) {
+							replaceContent = newLinesAndIndent();
+						} else if (!needsLineBreak) {
+							replaceContent = ' ';
+						}
+					} else {
+						if (!needsLineBreak) {
+							replaceContent = ' ';
+						}
 					}
 					break;
 				case SyntaxKind.StringLiteral:
-					if (secondToken === SyntaxKind.ColonToken) {
-						if (!needsLineBreak) {
-							replaceContent = '';
+					if (options.keepLines) {
+						if (lineBreak) {
+							replaceContent = newLinesAndIndent();
+						} else {
+							if (secondToken === SyntaxKind.ColonToken) {
+								if (!needsLineBreak) {
+									replaceContent = '';
+								}
+							}
 						}
-						break;
+					} else {
+						if (secondToken === SyntaxKind.ColonToken) {
+							if (!needsLineBreak) {
+								replaceContent = '';
+							}
+						}
 					}
-				// fall through
+					break;
 				case SyntaxKind.NullKeyword:
 				case SyntaxKind.TrueKeyword:
 				case SyntaxKind.FalseKeyword:
 				case SyntaxKind.NumericLiteral:
 				case SyntaxKind.CloseBraceToken:
 				case SyntaxKind.CloseBracketToken:
-					if (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia) {
-						if (!needsLineBreak) {
-							replaceContent = ' ';
+					if (options.keepLines) {
+						if (lineBreak) {
+							replaceContent = newLinesAndIndent();
+						} else {
+							if (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia) {
+								if (!needsLineBreak) {
+									replaceContent = ' ';
+								}
+							} else if (secondToken !== SyntaxKind.CommaToken && secondToken !== SyntaxKind.EOF) {
+								hasError = true;
+							}
 						}
-					} else if (secondToken !== SyntaxKind.CommaToken && secondToken !== SyntaxKind.EOF) {
-						hasError = true;
+					} else {
+						if (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia) {
+							if (!needsLineBreak) {
+								replaceContent = ' ';
+							}
+						} else if (secondToken !== SyntaxKind.CommaToken && secondToken !== SyntaxKind.EOF) {
+							hasError = true;
+						}
 					}
 					break;
 				case SyntaxKind.Unknown:
 					hasError = true;
 					break;
 			}
+
 			if (lineBreak && (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia)) {
-				replaceContent = newLineAndIndent();
+				replaceContent = newLinesAndIndent();
 			}
 		}
 		if (secondToken === SyntaxKind.EOF) {
-			replaceContent = options.insertFinalNewline ? eol : '';
+			if (options.keepLines) {
+				if (lineBreak) { 
+					replaceContent = newLinesAndIndent();
+				} else {
+					replaceContent = options.insertFinalNewline ? eol : '';
+				}
+			} else {
+				replaceContent = options.insertFinalNewline ? eol : '';
+			}
 		}
 		let secondTokenStart = scanner.getTokenOffset() + formatTextStart;
 		addEdit(replaceContent, firstTokenEnd, secondTokenStart);

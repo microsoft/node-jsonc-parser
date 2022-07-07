@@ -26,7 +26,8 @@ suite('JSON - edits', () => {
 	let formattingOptions: FormattingOptions = {
 		insertSpaces: true,
 		tabSize: 2,
-		eol: '\n'
+		eol: '\n',
+		keepLines: false
 	};
 
 	let options: ModificationOptions = {
