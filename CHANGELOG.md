@@ -1,6 +1,6 @@
 3.1.0 2022-07-07
 ==================
-  * Added the possibility to have multi-line formatting
+  * Added the variable `keepLines` in the FormattingOptions which keeps the empty break lines/new lines in the formatting.
 
 3.0.0 2020-11-13
 ==================
