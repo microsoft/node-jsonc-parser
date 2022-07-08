@@ -1,6 +1,6 @@
 3.1.0 2022-07-07
 ==================
-  * Added the possibility to have multi-line formatting
+  * Added an an additional feature `keepLines` in the formatting of JSON documents which leaves the lines as is 
 
 3.0.0 2020-11-13
 ==================
