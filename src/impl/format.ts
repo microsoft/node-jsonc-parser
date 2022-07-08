@@ -38,7 +38,6 @@ export function format(documentText: string, range: Range | undefined, options: 
 	let eol = getEOL(options, documentText);
 
 	let numberLineBreaks = 0;
-	let needsLineBreak = false;
 	let indentLevel = 0;
 	let indentValue: string;
 	if (options.insertSpaces) {
@@ -58,31 +57,14 @@ export function format(documentText: string, range: Range | undefined, options: 
 		}
 	}
 
-	function multipleLineBreaks(useVariableNeedsLineBreak = false) {
-
-		if (numberLineBreaks > 0) {
-			return newLinesAndIndent();
-		} else {
-			if (!useVariableNeedsLineBreak) {
-				return ' ';
-			} else if (useVariableNeedsLineBreak && !needsLineBreak) {
-				return ' ';
-			} else {
-				return '';
-			}
-		}
-	}
-
 	function scanNext(): SyntaxKind {
 		let token = scanner.scan();
 		numberLineBreaks = 0;
 		while (token === SyntaxKind.Trivia || token === SyntaxKind.LineBreakTrivia) {
-			if (token === SyntaxKind.LineBreakTrivia) {
-				if (options.keepLines) {
-					numberLineBreaks += 1;
-				} else {
-					numberLineBreaks = 1;
-				}
+			if (token === SyntaxKind.LineBreakTrivia && options.keepLines) {
+				numberLineBreaks += 1;
+			} else if (token === SyntaxKind.LineBreakTrivia) {
+				numberLineBreaks = 1;
 			}
 			token = scanner.scan();
 		}
@@ -107,12 +89,9 @@ export function format(documentText: string, range: Range | undefined, options: 
 	while (firstToken !== SyntaxKind.EOF) {
 		let firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
 		let secondToken = scanNext();
-
 		let replaceContent = '';
-		needsLineBreak = false;
-
+		let needsLineBreak = false;
 		while (numberLineBreaks === 0 && (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia)) {
-			// comments on the same line: keep them on the same line, but ignore them otherwise
 			let commentTokenStart = scanner.getTokenOffset() + formatTextStart;
 			addEdit(' ', firstTokenEnd, commentTokenStart);
 			firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
@@ -124,14 +103,22 @@ export function format(documentText: string, range: Range | undefined, options: 
 		if (secondToken === SyntaxKind.CloseBraceToken) {
 			if (firstToken !== SyntaxKind.OpenBraceToken) { indentLevel--; };
 			if (options.keepLines) {
-				replaceContent = multipleLineBreaks();
+				if (numberLineBreaks > 0) {
+					replaceContent = newLinesAndIndent();
+				} else {
+					replaceContent = ' ';
+				}
 			} else if (firstToken !== SyntaxKind.OpenBraceToken) {
 				replaceContent = newLinesAndIndent();
 			}
 		} else if (secondToken === SyntaxKind.CloseBracketToken) {
 			if (firstToken !== SyntaxKind.OpenBracketToken) { indentLevel--; };
 			if (options.keepLines) {
-				replaceContent = multipleLineBreaks();
+				if (numberLineBreaks > 0) {
+					replaceContent = newLinesAndIndent();
+				} else {
+					replaceContent = ' ';
+				}
 			}
 			else if (firstToken !== SyntaxKind.OpenBracketToken) {
 				replaceContent = newLinesAndIndent();
@@ -142,14 +129,22 @@ export function format(documentText: string, range: Range | undefined, options: 
 				case SyntaxKind.OpenBraceToken:
 					indentLevel++;
 					if (options.keepLines) {
-						replaceContent = multipleLineBreaks();
+						if (numberLineBreaks > 0) {
+							replaceContent = newLinesAndIndent();
+						} else {
+							replaceContent = " ";
+						}
 					} else {
 						replaceContent = newLinesAndIndent();
 					}
 					break;
 				case SyntaxKind.CommaToken:
 					if (options.keepLines) {
-						replaceContent = multipleLineBreaks();
+						if (numberLineBreaks > 0) {
+							replaceContent = newLinesAndIndent();
+						} else {
+							replaceContent = " ";
+						}
 					} else {
 						replaceContent = newLinesAndIndent();
 					}
@@ -158,11 +153,19 @@ export function format(documentText: string, range: Range | undefined, options: 
 					replaceContent = newLinesAndIndent();
 					break;
 				case SyntaxKind.BlockCommentTrivia:
-					replaceContent = multipleLineBreaks(true);
+					if (numberLineBreaks > 0) {
+						replaceContent = newLinesAndIndent();
+					} else if (!needsLineBreak) {
+						replaceContent = ' ';
+					}
 					break;
 				case SyntaxKind.ColonToken:
 					if (options.keepLines) {
-						replaceContent = multipleLineBreaks(true);
+						if (numberLineBreaks > 0) {
+							replaceContent = newLinesAndIndent();
+						} else if (!needsLineBreak) {
+							replaceContent = ' ';
+						}
 					} else {
 						if (!needsLineBreak) {
 							replaceContent = ' ';
@@ -220,7 +223,6 @@ export function format(documentText: string, range: Range | undefined, options: 
 					hasError = true;
 					break;
 			}
-
 			if (numberLineBreaks > 0 && (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia)) {
 				replaceContent = newLinesAndIndent();
 			}
