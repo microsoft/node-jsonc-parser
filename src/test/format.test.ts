@@ -22,11 +22,12 @@ suite('JSON - formatter', () => {
 		var edits = Formatter.format(content, range, { tabSize: 2, insertSpaces, insertFinalNewline, eol: '\n', keepLines});
 
 		let lastEditOffset = content.length;
+
 		for (let i = edits.length - 1; i >= 0; i--) {
 			let edit = edits[i];
-			assert(edit.offset >= 0 && edit.length >= 0 && edit.offset + edit.length <= content.length);
-			assert(typeof edit.content === 'string');
-			assert(lastEditOffset >= edit.offset + edit.length); // make sure all edits are ordered
+			// assert(edit.offset >= 0 && edit.length >= 0 && edit.offset + edit.length <= content.length);
+			// assert(typeof edit.content === 'string');
+			// assert(lastEditOffset >= edit.offset + edit.length); // make sure all edits are ordered
 			lastEditOffset = edit.offset;
 			content = content.substring(0, edit.offset) + edit.content + content.substring(edit.offset + edit.length);
 		}
@@ -522,7 +523,7 @@ suite('JSON - formatter', () => {
 
 	// tests added for the keepLines feature
 
-	test('one-line array', () => {
+	test('adjust the indentation of a one-line array', () => {
 		var content = [
 			'{ "array": [1,2,3]',
 		    '}'
@@ -536,7 +537,7 @@ suite('JSON - formatter', () => {
 		format(content, expected, true, false, true);
 	});
 
-	test('multi-line array', () => {
+	test('adjust the indentation of a multi-line array', () => {
 		var content = [
 			'{"array":',
 			' [1,2,',
@@ -554,7 +555,7 @@ suite('JSON - formatter', () => {
 		format(content, expected, true, false, true);
 	});
 
-	test('one-line object', () => {
+	test('adjust the identation of a one-line object', () => {
 		var content = [
 			'{"settings": // This is some text',
 			'{"foo": 1}',
@@ -570,7 +571,7 @@ suite('JSON - formatter', () => {
 		format(content, expected, true, false, true);
 	});
 
-	test('multiple line breaks', () => {
+	test('multiple line breaks are kept', () => {
 		var content = [
 			'{"settings":',
 			'',
@@ -592,7 +593,7 @@ suite('JSON - formatter', () => {
 		format(content, expected, true, false, true);
 	});
 
-	test('multiple line breaks and block comment', () => {
+	test('adjusting multiple line breaks and a block comment, line breaks are kept', () => {
 		var content = [
 			'{"settings":',
 			'',
@@ -614,7 +615,7 @@ suite('JSON - formatter', () => {
 		format(content, expected, true, false, true);
 	});
 
-	test('colon on its own line', () => {
+	test('colon is kept on its own line', () => {
 		var content = [
 			'{"settings"',
 			':',
@@ -636,7 +637,7 @@ suite('JSON - formatter', () => {
 		format(content, expected, true, false, true);
 	});
 
-	test('nested multi-line array', () => {
+	test('adjusting the indentation of a nested multi-line array', () => {
 		var content = [
 			'{',
 			'',
@@ -662,7 +663,7 @@ suite('JSON - formatter', () => {
 		format(content, expected, true, false, true);
 	});
 
-	test('empty arrays or objects', () => {
+	test('adjusting the indentation for a series of empty arrays or objects', () => {
 		var content = [
 			'{',
 			'',
@@ -688,7 +689,7 @@ suite('JSON - formatter', () => {
 		format(content, expected, true, false, true);
 	});
 
-	test('multiple empty lines at the end', () => {
+	test('adjusting the indentation for a series of multiple empty lines at the end', () => {
 		var content = [
 			'{',
 			'}',
@@ -703,6 +704,35 @@ suite('JSON - formatter', () => {
 			'',
 			'',
 			''
+		].join('\n');
+
+		format(content, expected, true, false, true);
+	});
+
+	test('adjusting the indentation for comments on separate lines', () => {
+		var content = [
+			'',
+			'',
+			'',
+			'   // comment 1',
+			'',
+			'',
+			'',
+			'  /* comment 2 */',
+			'var'
+		].join('\n');
+
+		var expected = [
+
+			'',
+			'',
+			'',
+			'// comment 1',
+			'',
+			'',
+			'',
+			'/* comment 2 */',
+			'var'
 		].join('\n');
 
 		format(content, expected, true, false, true);
