@@ -34,7 +34,7 @@ export function format(documentText: string, range: Range | undefined, options: 
 		rangeStart = 0;
 		rangeEnd = documentText.length;
 	}
-	let eol = getEOL(options, documentText);
+	const eol = getEOL(options, documentText);
 
 	let numberLineBreaks = 0;
 
@@ -72,7 +72,7 @@ export function format(documentText: string, range: Range | undefined, options: 
 		hasError = token === SyntaxKind.Unknown || scanner.getTokenError() !== ScanError.None;
 		return token;
 	}
-	let editOperations: Edit[] = [];
+	const editOperations: Edit[] = [];
 	function addEdit(text: string, startOffset: number, endOffset: number) {
 		if (!hasError && (!range || (startOffset < rangeEnd && endOffset > rangeStart)) && documentText.substring(startOffset, endOffset) !== text) {
 			editOperations.push({ offset: startOffset, length: endOffset - startOffset, content: text });
@@ -195,7 +195,7 @@ export function format(documentText: string, range: Range | undefined, options: 
 				replaceContent = options.insertFinalNewline ? eol : '';
 			}
 		}
-		let secondTokenStart = scanner.getTokenOffset() + formatTextStart;
+		const secondTokenStart = scanner.getTokenOffset() + formatTextStart;
 		addEdit(replaceContent, firstTokenEnd, secondTokenStart);
 		firstToken = secondToken;
 	}
@@ -213,7 +213,7 @@ function repeat(s: string, count: number): string {
 function computeIndentLevel(content: string, options: FormattingOptions): number {
 	let i = 0;
 	let nChars = 0;
-	let tabSize = options.tabSize || 4;
+	const tabSize = options.tabSize || 4;
 	while (i < content.length) {
 		let ch = content.charAt(i);
 		if (ch === ' ') {
@@ -230,7 +230,7 @@ function computeIndentLevel(content: string, options: FormattingOptions): number
 
 function getEOL(options: FormattingOptions, text: string): string {
 	for (let i = 0; i < text.length; i++) {
-		let ch = text.charAt(i);
+		const ch = text.charAt(i);
 		if (ch === '\r') {
 			if (i + 1 < text.length && text.charAt(i + 1) === '\n') {
 				return '\r\n';
