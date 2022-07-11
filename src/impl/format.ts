@@ -129,14 +129,14 @@ export function format(documentText: string, range: Range | undefined, options: 
 					indentLevel++;
 					if (options.keepLines && numberLineBreaks > 0 || !options.keepLines) {
 						replaceContent = newLinesAndIndent();
-					} else if (options.keepLines) {
+					} else {
 						replaceContent = ' ';
 					}
 					break;
 				case SyntaxKind.CommaToken:
 					if (options.keepLines && numberLineBreaks > 0 || !options.keepLines) {
 						replaceContent = newLinesAndIndent();
-					} else if (options.keepLines) {
+					} else {
 						replaceContent = ' ';
 					}
 					break;

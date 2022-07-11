@@ -123,7 +123,7 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, op
 
 				edit = { offset: toModify.offset, length: toModify.length, content: newProperty };
 			} else if (parent.children.length === 0 || lastSegment === 0) {
-					edit = { offset: parent.offset + 1, length: 0, content: parent.children.length === 0 ? newProperty : newProperty + ',' };
+				edit = { offset: parent.offset + 1, length: 0, content: parent.children.length === 0 ? newProperty : newProperty + ',' };
 			} else {
 				const index = lastSegment > parent.children.length ? parent.children.length : lastSegment;
 				const previous = parent.children[index - 1];
@@ -158,6 +158,7 @@ function withFormatting(text: string, edit: Edit, options: ModificationOptions):
 		}
 	}
 
+	options.formattingOptions.keepLines = false;
 	let edits = format(newText, { offset: begin, length: end - begin }, options.formattingOptions);
 
 	// apply the formatting edits and track the begin and end offsets of the changes
