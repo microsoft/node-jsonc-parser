@@ -26,11 +26,23 @@ suite('JSON - edits', () => {
 	let formattingOptions: FormattingOptions = {
 		insertSpaces: true,
 		tabSize: 2,
-		eol: '\n'
+		eol: '\n',
+		keepLines: false
+	};
+
+	let formattingOptionsKeepLines: FormattingOptions = {
+		insertSpaces: true,
+		tabSize: 2,
+		eol: '\n',
+		keepLines: true
 	};
 
 	let options: ModificationOptions = {
 		formattingOptions
+	};
+
+	let optionsKeepLines: ModificationOptions = {
+		formattingOptions : formattingOptionsKeepLines
 	};
 
 	test('set property', () => {
@@ -220,5 +232,13 @@ suite('JSON - edits', () => {
 
 		edits = modify(content, ['x', 0], { a: 1, b: 2 }, { formattingOptions: undefined });
 		assertEdit(content, edits, '{\n  "x": [{"a":1,"b":2}, 2, 3],\n  "y": 0\n}');
+	});
+
+	// test added for the keepLines feature
+	test('insert property when keepLines is true', () => {
+
+		let content = '{}';
+		let edits = modify(content, ['foo', 'foo2'], 'bar', options);
+		assertEdit(content, edits, '{\n  "foo": {\n    "foo2": "bar"\n  }\n}');
 	});
 });

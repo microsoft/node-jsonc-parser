@@ -357,6 +357,10 @@ export interface FormattingOptions {
 	 * If set, will add a new line at the end of the document.
 	 */
 	insertFinalNewline?: boolean;
+	/**
+	 * If true, will keep line positions as is in the formatting
+	 */
+	keepLines?: boolean;
 }
 
 /**
