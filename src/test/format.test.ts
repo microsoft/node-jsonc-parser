@@ -571,6 +571,7 @@ suite('JSON - formatter', () => {
 		format(content, expected, true, false, true);
 	});
 
+	// some change
 	test('multiple line breaks are kept', () => {
 		const content = [
 			'{"settings":',
