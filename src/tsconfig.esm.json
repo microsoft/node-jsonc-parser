@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"target": "ES5",
+		"target": "es2020",
 		"module": "es6",
 		"moduleResolution": "node",
 		"sourceMap": true,
@@ -8,9 +8,9 @@
 		"stripInternal": true,
 		"outDir": "../lib/esm",
 		"strict": true,
+		"preserveConstEnums": true,
 		"lib": [
-			"es5",
-			"es2015.promise"
+			"es2020"
 		]
 	}
 }
