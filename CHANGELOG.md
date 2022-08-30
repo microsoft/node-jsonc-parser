@@ -1,6 +1,12 @@
+
+3.2.0 2022-08-30
+=================
+- update the version of the bundled Javascript files to `es2020`.
+- include all `const enum` values in the bundled JavaScript files (`ScanError`, `SyntaxKind`, `ParseErrorCode`).
+
 3.1.0 2022-07-07
 ==================
-  * added new API `FormattingOptions.keepLines` : It leaves the initial line positions in the formatting
+  * added new API `FormattingOptions.keepLines` : It leaves the initial line positions in the formatting.
 
 3.0.0 2020-11-13
 ==================
