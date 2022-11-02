@@ -33,8 +33,6 @@
     "clean": "rimraf lib",
     "watch": "tsc -w -p ./src",
     "test": "npm run compile && mocha ./lib/umd/test",
-    "lint": "eslint src/**/*.ts",
-    "preversion": "npm test",
-    "postversion": "git push && git push --tags"
+    "lint": "eslint src/**/*.ts"
   }
 }
