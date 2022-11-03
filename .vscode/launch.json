@@ -8,6 +8,7 @@
 			"program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
 			"stopOnEntry": false,
 			"args": [
+				"./lib/umd/test",
 				"--timeout",
 				"999999",
 				"--colors"
