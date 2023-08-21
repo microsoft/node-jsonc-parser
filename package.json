@@ -2,9 +2,14 @@
   "name": "jsonc-parser",
   "version": "3.2.1",
   "description": "Scanner and parser for JSON with comments.",
-  "main": "./lib/umd/main.js",
-  "typings": "./lib/umd/main.d.ts",
-  "module": "./lib/esm/main.js",
+  "main": "./lib/cjs/main.js",
+  "exports": {
+    ".": {
+      "import": "./lib/esm/main.js",
+      "module": "./lib/esm/main.js",
+      "default": "./lib/cjs/main.js"
+    }
+  },
   "author": "Microsoft Corporation",
   "repository": {
     "type": "git",
@@ -25,13 +30,12 @@
     "rimraf": "^5.0.5"
   },
   "scripts": {
-    "prepack": "npm run clean && npm run compile-esm && npm run test && npm run remove-sourcemap-refs",
-    "compile": "tsc -p ./src && npm run lint",
-    "compile-esm": "tsc -p ./src/tsconfig.esm.json",
+    "prepack": "npm run clean && npm run test && npm run remove-sourcemap-refs",
+    "compile": "tsc -b && node ./build/fix-esm.mjs && npm run lint",
     "remove-sourcemap-refs": "node ./build/remove-sourcemap-refs.js",
     "clean": "rimraf lib",
-    "watch": "tsc -w -p ./src",
-    "test": "npm run compile && mocha ./lib/umd/test",
-    "lint": "eslint src/**/*.ts"
+    "watch": "tsc -w -b",
+    "test": "npm run compile && mocha",
+    "lint": "eslint ."
   }
 }

@@ -4,10 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import * as formatter from './impl/format';
-import * as edit from './impl/edit';
-import * as scanner from './impl/scanner';
-import * as parser from './impl/parser';
+import * as formatter from './impl/format.js';
+import * as edit from './impl/edit.js';
+import * as scanner from './impl/scanner.js';
+import * as parser from './impl/parser.js';
 
 /**
  * Creates a JSON scanner on the given text.
