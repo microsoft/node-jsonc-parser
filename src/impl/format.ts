@@ -9,6 +9,16 @@ import { createScanner } from './scanner';
 import { cachedSpaces, cachedBreakLinesWithSpaces, supportedEols, SupportedEOL } from './string-intern';
 
 export function format(documentText: string, range: Range | undefined, options: FormattingOptions): Edit[] {
+	const operations: Edit[] = [];
+
+	for (const edit of formatGenerator(documentText, range, options)) {
+		operations.push(edit);
+	}
+
+	return operations;
+}
+
+export function* formatGenerator(documentText: string, range: Range | undefined, options: FormattingOptions): Generator<Edit, void, void> {
 	let initialIndentLevel: number;
 	let formatText: string;
 	let formatTextStart: number;
@@ -85,16 +95,12 @@ export function format(documentText: string, range: Range | undefined, options: 
 		hasError = token === SyntaxKind.Unknown || scanner.getTokenError() !== ScanError.None;
 		return token;
 	}
-	const editOperations: Edit[] = [];
-	function addEdit(text: string, startOffset: number, endOffset: number) {
-		if (!hasError && (!range || (startOffset < rangeEnd && endOffset > rangeStart)) && documentText.substring(startOffset, endOffset) !== text) {
-			editOperations.push({ offset: startOffset, length: endOffset - startOffset, content: text });
-		}
-	}
-
+	const shouldAddEdit = (text: string, startOffset: number, endOffset: number) => !hasError && (!range || (startOffset < rangeEnd && endOffset > rangeStart)) && documentText.substring(startOffset, endOffset) !== text
 	let firstToken = scanNext();
 	if (options.keepLines && numberLineBreaks > 0) {
-		addEdit(repeat(eol, numberLineBreaks), 0, 0);
+		const text = repeat(eol, numberLineBreaks);
+		if (shouldAddEdit(text, 0, 0))
+			yield { offset: 0, length: 0, content: text };
 	}
 
 	if (firstToken !== SyntaxKind.EOF) {
@@ -102,7 +108,8 @@ export function format(documentText: string, range: Range | undefined, options: 
 		let initialIndent = (indentValue.length * initialIndentLevel < 20) && options.insertSpaces 
 			? cachedSpaces[indentValue.length * initialIndentLevel] 
 			: repeat(indentValue, initialIndentLevel);
-		addEdit(initialIndent, formatTextStart, firstTokenStart);
+		if (shouldAddEdit(initialIndent, formatTextStart, firstTokenStart))
+			yield { offset: formatTextStart, length: firstTokenStart - formatTextStart, content: initialIndent };
 	}
 
 	while (firstToken !== SyntaxKind.EOF) {
@@ -114,7 +121,9 @@ export function format(documentText: string, range: Range | undefined, options: 
 
 		while (numberLineBreaks === 0 && (secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia)) {
 			let commentTokenStart = scanner.getTokenOffset() + formatTextStart;
-			addEdit(cachedSpaces[1], firstTokenEnd, commentTokenStart);
+			if (shouldAddEdit(cachedSpaces[1], firstTokenEnd, commentTokenStart))
+				yield { offset: firstTokenEnd, length: commentTokenStart - firstTokenEnd, content: cachedSpaces[1] };
+
 			firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
 			needsLineBreak = secondToken === SyntaxKind.LineCommentTrivia;
 			replaceContent = needsLineBreak ? newLinesAndIndent() : '';
@@ -211,10 +220,10 @@ export function format(documentText: string, range: Range | undefined, options: 
 			}
 		}
 		const secondTokenStart = scanner.getTokenOffset() + formatTextStart;
-		addEdit(replaceContent, firstTokenEnd, secondTokenStart);
+		if (shouldAddEdit(replaceContent, firstTokenEnd, secondTokenStart))
+			yield { offset: firstTokenEnd, length: secondTokenStart - firstTokenEnd, content: replaceContent };
 		firstToken = secondToken;
 	}
-	return editOperations;
 }
 
 function repeat(s: string, count: number): string {

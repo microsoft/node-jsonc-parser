@@ -306,6 +306,11 @@ export interface JSONVisitor {
 export type EditResult = Edit[];
 
 /**
+ * See more {@link EditResult}
+ */
+export type EditGeneratorResult = Generator<Edit, void, void>;
+
+/**
  * Represents a text modification
  */
 export interface Edit {
@@ -374,6 +379,19 @@ export interface FormattingOptions {
  */
 export function format(documentText: string, range: Range | undefined, options: FormattingOptions): EditResult {
 	return formatter.format(documentText, range, options);
+}
+
+/**
+ * Computes the edit operations needed to format a JSON document.
+ * 
+ * @param documentText The input text 
+ * @param range The range to format or `undefined` to format the full content
+ * @param options The formatting options
+ * @returns The edit operations describing the formatting changes to the original document following the format described in {@linkcode EditResult}.
+ * To apply the edit operations to the input, use {@linkcode applyEdits}.
+ */
+export function formatGenerator(documentText: string, range: Range | undefined, options: FormattingOptions): EditGeneratorResult {
+	return formatter.formatGenerator(documentText, range, options);
 }
 
 /** 
