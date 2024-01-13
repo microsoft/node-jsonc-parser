@@ -36,6 +36,24 @@ export function format(documentText: string, range: Range | undefined, options: 
 	}
 	const eol = getEOL(options, documentText);
 
+	if (eol === '\n' && options.insertSpaces && !options.keepLines && rangeStart === 0 && rangeEnd === documentText.length) {
+		try {
+			let formatted = JSON.stringify(JSON.parse(documentText), null, options?.tabSize || 4);
+
+			if (options.insertFinalNewline) {
+				formatted += '\n';
+			}
+
+			return [{ 
+				offset: 0,
+				length: documentText.length, 
+				content: formatted
+			}];
+		} catch (e) {
+			// ignore because there is an error on JSON and we will try format until we reach that error.
+		}
+	}
+
 	let numberLineBreaks = 0;
 
 	let indentLevel = 0;
