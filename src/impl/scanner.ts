@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import { ScanError, SyntaxKind, JSONScanner } from '../main';
+import { ScanError, SyntaxKind, JSONScanner } from '../main.js';
 
 /**
  * Creates a JSON scanner on the given text.
