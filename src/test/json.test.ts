@@ -79,18 +79,19 @@ interface VisitorError extends ParseError {
 	startCharacter: number;
 }
 
-function assertVisit(input: string, expected: VisitorCallback[], expectedErrors: VisitorError[] = [], disallowComments = false): void {
+function assertVisit(input: string, expected: VisitorCallback[], expectedErrors: VisitorError[] = [], disallowComments = false, stopOnLine = -1, stopOnChar = -1): void {
 	let errors: VisitorError[] = [];
 	let actuals: VisitorCallback[] = [];
 	let noArgHalder = (id: keyof JSONVisitor) => (offset: number, length: number, startLine: number, startCharacter: number) => actuals.push({ id, text: input.substr(offset, length), startLine, startCharacter });
-	let noArgHalderWithPath = (id: keyof JSONVisitor) => (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => actuals.push({ id, text: input.substr(offset, length), startLine, startCharacter, path: pathSupplier() });
+	let noArgHalderWithPath = (id: keyof JSONVisitor) => (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => {actuals.push({ id, text: input.substr(offset, length), startLine, startCharacter, path: pathSupplier() });};
 	let oneArgHalder = (id: keyof JSONVisitor) => (arg: any, offset: number, length: number, startLine: number, startCharacter: number) => actuals.push({ id, text: input.substr(offset, length), startLine, startCharacter, arg });
 	let oneArgHalderWithPath = (id: keyof JSONVisitor) => (arg: any, offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => actuals.push({ id, text: input.substr(offset, length), startLine, startCharacter, arg, path: pathSupplier() });
+	let beginHalder = (id: keyof JSONVisitor) => (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => { actuals.push({ id, text: input.substr(offset, length), startLine, startCharacter, path: pathSupplier() }); if (!(stopOnLine === -1 && stopOnChar === -1)) { if ((stopOnLine === -1 || stopOnLine === startLine) && (stopOnChar === -1 || stopOnChar === startCharacter)) { return false; } } return true; };
 	visit(input, {
-		onObjectBegin: noArgHalderWithPath('onObjectBegin'),
+		onObjectBegin: beginHalder('onObjectBegin'),
 		onObjectProperty: oneArgHalderWithPath('onObjectProperty'),
 		onObjectEnd: noArgHalder('onObjectEnd'),
-		onArrayBegin: noArgHalderWithPath('onArrayBegin'),
+		onArrayBegin: beginHalder('onArrayBegin'),
 		onArrayEnd: noArgHalder('onArrayEnd'),
 		onLiteralValue: oneArgHalderWithPath('onLiteralValue'),
 		onSeparator: oneArgHalder('onSeparator'),
@@ -458,6 +459,18 @@ suite('JSON', () => {
 			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 20 },
 			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 22 },
 		]);
+		assertVisit('{ "foo": "bar", "a": {"b": "c"} }', [
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 0, path: [] },
+			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 32 },
+		], [], false, 0);
+		assertVisit('{ "a": { "b": "c", "d": { "e": "f" } } }', [
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 0, path: [] },
+			{ id: 'onObjectProperty', text: '"a"', startLine: 0, startCharacter: 2, arg: 'a', path: [] },
+			{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 5, arg: ':' },
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 7, path: ['a'] },
+			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 37 },
+			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 39 }
+		], [], true, 0, 7);
 	});
 
 	test('visit: array', () => {
@@ -514,6 +527,14 @@ suite('JSON', () => {
 			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 58 },
 			{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 60 },
 		]);
+		assertVisit('{ "foo": [ { "a": "b", "c:": "d", "d": { "e": "f" } } ] }', [
+			{ id: 'onObjectBegin', text: '{', startLine: 0, startCharacter: 0, path: [] },
+			{ id: 'onObjectProperty', text: '"foo"', startLine: 0, startCharacter: 2, arg: 'foo', path: [] },
+			{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 7, arg: ':' },
+			{ id: 'onArrayBegin', text: '[', startLine: 0, startCharacter: 9, path: ['foo'] },
+			{ id: 'onArrayEnd', text: ']', startLine: 0, startCharacter: 54 },
+			{ id: 'onObjectEnd', text: '}', startLine: 0, startCharacter: 56 }
+		], [], true, 0, 9);
 	});
 
 	test('visit: comment', () => {

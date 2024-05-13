@@ -248,7 +248,7 @@ export interface JSONVisitor {
 	/**
 	 * Invoked when an open brace is encountered and an object is started. The offset and length represent the location of the open brace.
 	 */
-	onObjectBegin?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void;
+	onObjectBegin?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => boolean | void;
 
 	/**
 	 * Invoked when a property is encountered. The offset and length represent the location of the property name.
@@ -265,7 +265,7 @@ export interface JSONVisitor {
 	/**
 	 * Invoked when an open bracket is encountered. The offset and length represent the location of the open bracket.
 	 */
-	onArrayBegin?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void;
+	onArrayBegin?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => boolean | void;
 
 	/**
 	 * Invoked when a closing bracket is encountered. The offset and length represent the location of the closing bracket.
