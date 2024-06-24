@@ -5,6 +5,12 @@
   "main": "./lib/umd/main.js",
   "typings": "./lib/umd/main.d.ts",
   "module": "./lib/esm/main.js",
+  "exports": {
+    "types": "./lib/umd/main.d.ts",
+    "import": "./lib/esm/main.js",
+    "require": "./lib/umd/main.js",
+    "browser": "./lib/esm/main.js"
+  },
   "author": "Microsoft Corporation",
   "repository": {
     "type": "git",
