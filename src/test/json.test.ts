@@ -8,7 +8,7 @@ import * as assert from 'assert';
 import {
 	SyntaxKind, createScanner, parse, getLocation, Node, ParseError, parseTree, ParseErrorCode,
 	ParseOptions, Segment, findNodeAtLocation, getNodeValue, getNodePath, ScanError, visit, JSONVisitor, JSONPath
-} from '../main';
+} from '../main.js';
 
 function assertKinds(text: string, ...kinds: SyntaxKind[]): void {
 	var scanner = createScanner(text);
@@ -43,7 +43,7 @@ function assertInvalidParse(input: string, expected: any, options?: ParseOptions
 	var errors: ParseError[] = [];
 	var actual = parse(input, errors, options);
 
-	assert(errors.length > 0);
+	assert.ok(errors.length > 0);
 	assert.deepStrictEqual(actual, expected);
 }
 
@@ -117,7 +117,7 @@ function assertLocation(input: string, expectedSegments: Segment[], expectedNode
 	var offset = input.indexOf('|');
 	input = input.substring(0, offset) + input.substring(offset + 1, input.length);
 	var actual = getLocation(input, offset);
-	assert(actual);
+	assert.ok(actual);
 	assert.deepStrictEqual(actual.path, expectedSegments, input);
 	assert.strictEqual(actual.previousNode && actual.previousNode.type, expectedNodeType, input);
 	assert.strictEqual(actual.isAtPropertyKey, expectedCompleteProperty, input);
@@ -127,7 +127,7 @@ function assertMatchesLocation(input: string, matchingSegments: Segment[], expec
 	var offset = input.indexOf('|');
 	input = input.substring(0, offset) + input.substring(offset + 1, input.length);
 	var actual = getLocation(input, offset);
-	assert(actual);
+	assert.ok(actual);
 	assert.strictEqual(actual.matches(matchingSegments), expectedResult);
 }
 

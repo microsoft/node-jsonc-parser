@@ -5,18 +5,18 @@
 'use strict';
 
 import * as assert from 'assert';
-import { FormattingOptions, Edit, ModificationOptions, modify } from '../main';
+import { FormattingOptions, Edit, ModificationOptions, modify } from '../main.js';
 
 suite('JSON - edits', () => {
 
 	function assertEdit(content: string, edits: Edit[], expected: string) {
-		assert(edits);
+		assert.ok(edits);
 		let lastEditOffset = content.length;
 		for (let i = edits.length - 1; i >= 0; i--) {
 			let edit = edits[i];
-			assert(edit.offset >= 0 && edit.length >= 0 && edit.offset + edit.length <= content.length);
-			assert(typeof edit.content === 'string');
-			assert(lastEditOffset >= edit.offset + edit.length); // make sure all edits are ordered
+			assert.ok(edit.offset >= 0 && edit.length >= 0 && edit.offset + edit.length <= content.length);
+			assert.ok(typeof edit.content === 'string');
+			assert.ok(lastEditOffset >= edit.offset + edit.length); // make sure all edits are ordered
 			lastEditOffset = edit.offset;
 			content = content.substring(0, edit.offset) + edit.content + content.substring(edit.offset + edit.length);
 		}
