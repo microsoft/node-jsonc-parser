@@ -409,7 +409,7 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 				if (suppressedCallbacks > 0) { suppressedCallbacks++; }
 				else {
 					let cbReturn = visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter(), () => _jsonPath.slice());
-					if (typeof cbReturn === 'boolean' && !cbReturn) { suppressedCallbacks = 1; }
+					if (cbReturn === false) { suppressedCallbacks = 1; }
 				}
 			}
 			: () => true;
