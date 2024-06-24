@@ -1,3 +1,7 @@
+3.3.0 2022-06-24
+=================
+- `JSONVisitor.onObjectBegin` and `JSONVisitor.onArrayBegin` can now return `false` to instruct the visitor that no children should be visited.
+
 
 3.2.0 2022-08-30
 =================
