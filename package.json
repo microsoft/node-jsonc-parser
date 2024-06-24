@@ -1,10 +1,16 @@
 {
   "name": "jsonc-parser",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "description": "Scanner and parser for JSON with comments.",
   "main": "./lib/umd/main.js",
   "typings": "./lib/umd/main.d.ts",
   "module": "./lib/esm/main.js",
+  "exports": {
+    "types": "./lib/umd/main.d.ts",
+    "import": "./lib/esm/main.js",
+    "require": "./lib/umd/main.js",
+    "browser": "./lib/esm/main.js"
+  },
   "author": "Microsoft Corporation",
   "repository": {
     "type": "git",
@@ -15,14 +21,14 @@
     "url": "https://github.com/microsoft/node-jsonc-parser/issues"
   },
   "devDependencies": {
-    "mocha": "^10.2.0",
-    "typescript": "^5.3.3",
-    "@types/node": "^16.x",
-    "@types/mocha": "^10.0.6",
-    "@typescript-eslint/eslint-plugin": "^6.19.1",
-    "@typescript-eslint/parser": "^6.19.1",
-    "eslint": "^8.56.0",
-    "rimraf": "^5.0.5"
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^18.x",
+    "@typescript-eslint/eslint-plugin": "^7.13.1",
+    "@typescript-eslint/parser": "^7.13.1",
+    "eslint": "^8.57.0",
+    "mocha": "^10.4.0",
+    "rimraf": "^5.0.7",
+    "typescript": "^5.4.2"
   },
   "scripts": {
     "prepack": "npm run clean && npm run compile-esm && npm run test && npm run remove-sourcemap-refs",

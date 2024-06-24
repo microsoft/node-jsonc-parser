@@ -30,21 +30,21 @@ extends:
         testPlatforms:
           - name: Linux
             nodeVersions:
-              - 16.x
+              - 18.x
           - name: MacOS
             nodeVersions:
-              - 16.x
+              - 18.x
           - name: Windows
             nodeVersions:
-              - 16.x              
+              - 18.x
 
         buildSteps:
           - script: npm ci
-            displayName: Install dependencies         
+            displayName: Install dependencies
 
         testSteps:
           - script: npm ci
-            displayName: Install dependencies 
+            displayName: Install dependencies
           - script: npm test
             displayName: Test npm package
 
