@@ -390,24 +390,44 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 	// to not affect visitor functions which stored a reference to a previous JSONPath
 	const _jsonPath: JSONPath = [];
 
+	// Depth of onXXXBegin() callbacks suppressed. onXXXEnd() decrements this if it isn't 0 already.
+	// Callbacks are only called when this value is 0.
+	let suppressedCallbacks = 0;
+
 	function toNoArgVisit(visitFunction?: (offset: number, length: number, startLine: number, startCharacter: number) => void): () => void {
-		return visitFunction ? () => visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
-	}
-	function toNoArgVisitWithPath(visitFunction?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void): () => void {
-		return visitFunction ? () => visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter(), () => _jsonPath.slice()) : () => true;
+		return visitFunction ? () => suppressedCallbacks === 0 && visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
 	}
 	function toOneArgVisit<T>(visitFunction?: (arg: T, offset: number, length: number, startLine: number, startCharacter: number) => void): (arg: T) => void {
-		return visitFunction ? (arg: T) => visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
+		return visitFunction ? (arg: T) => suppressedCallbacks === 0 && visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
 	}
 	function toOneArgVisitWithPath<T>(visitFunction?: (arg: T, offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void): (arg: T) => void {
-		return visitFunction ? (arg: T) => visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter(), () => _jsonPath.slice()) : () => true;
+		return visitFunction ? (arg: T) => suppressedCallbacks === 0 && visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter(), () => _jsonPath.slice()) : () => true;
+	}
+	function toBeginVisit(visitFunction?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => boolean | void): () => void {
+		return visitFunction ?
+			() => {
+				if (suppressedCallbacks > 0) { suppressedCallbacks++; }
+				else {
+					let cbReturn = visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter(), () => _jsonPath.slice());
+					if (cbReturn === false) { suppressedCallbacks = 1; }
+				}
+			}
+			: () => true;
+	}
+	function toEndVisit(visitFunction?: (offset: number, length: number, startLine: number, startCharacter: number) => void): () => void {
+		return visitFunction ?
+			() => {
+				if (suppressedCallbacks > 0) { suppressedCallbacks--; }
+				if (suppressedCallbacks === 0) { visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()); }
+			}
+			: () => true;
 	}
 
-	const onObjectBegin = toNoArgVisitWithPath(visitor.onObjectBegin),
+	const onObjectBegin = toBeginVisit(visitor.onObjectBegin),
 		onObjectProperty = toOneArgVisitWithPath(visitor.onObjectProperty),
-		onObjectEnd = toNoArgVisit(visitor.onObjectEnd),
-		onArrayBegin = toNoArgVisitWithPath(visitor.onArrayBegin),
-		onArrayEnd = toNoArgVisit(visitor.onArrayEnd),
+		onObjectEnd = toEndVisit(visitor.onObjectEnd),
+		onArrayBegin = toBeginVisit(visitor.onArrayBegin),
+		onArrayEnd = toEndVisit(visitor.onArrayEnd),
 		onLiteralValue = toOneArgVisitWithPath(visitor.onLiteralValue),
 		onSeparator = toOneArgVisit(visitor.onSeparator),
 		onComment = toNoArgVisit(visitor.onComment),

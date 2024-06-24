@@ -124,7 +124,7 @@ export const findNodeAtOffset: (root: Node, offset: number, includeRightBound?: 
 export const getNodePath: (node: Node) => JSONPath = parser.getNodePath;
 
 /**
- * Evaluates the JavaScript object of the given JSON DOM node 
+ * Evaluates the JavaScript object of the given JSON DOM node
  */
 export const getNodeValue: (node: Node) => any = parser.getNodeValue;
 
@@ -235,20 +235,21 @@ export interface ParseOptions {
 
 /**
  * Visitor called by {@linkcode visit} when parsing JSON.
- * 
+ *
  * The visitor functions have the following common parameters:
  * - `offset`: Global offset within the JSON document, starting at 0
  * - `startLine`: Line number, starting at 0
  * - `startCharacter`: Start character (column) within the current line, starting at 0
- * 
+ *
  * Additionally some functions have a `pathSupplier` parameter which can be used to obtain the
  * current `JSONPath` within the document.
  */
 export interface JSONVisitor {
 	/**
 	 * Invoked when an open brace is encountered and an object is started. The offset and length represent the location of the open brace.
+	 * When `false` is returned, the object properties will not be visited.
 	 */
-	onObjectBegin?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void;
+	onObjectBegin?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => boolean | void;
 
 	/**
 	 * Invoked when a property is encountered. The offset and length represent the location of the property name.
@@ -264,8 +265,9 @@ export interface JSONVisitor {
 
 	/**
 	 * Invoked when an open bracket is encountered. The offset and length represent the location of the open bracket.
+	 * When `false` is returned, the array items will not be visited.
 	 */
-	onArrayBegin?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void;
+	onArrayBegin?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => boolean | void;
 
 	/**
 	 * Invoked when a closing bracket is encountered. The offset and length represent the location of the closing bracket.
@@ -328,7 +330,7 @@ export interface Edit {
 */
 export interface Range {
 	/**
-	 * The start offset of the range. 
+	 * The start offset of the range.
 	 */
 	offset: number;
 	/**
@@ -337,7 +339,7 @@ export interface Range {
 	length: number;
 }
 
-/** 
+/**
  * Options used by {@linkcode format} when computing the formatting edit operations
  */
 export interface FormattingOptions {
@@ -365,8 +367,8 @@ export interface FormattingOptions {
 
 /**
  * Computes the edit operations needed to format a JSON document.
- * 
- * @param documentText The input text 
+ *
+ * @param documentText The input text
  * @param range The range to format or `undefined` to format the full content
  * @param options The formatting options
  * @returns The edit operations describing the formatting changes to the original document following the format described in {@linkcode EditResult}.
@@ -376,7 +378,7 @@ export function format(documentText: string, range: Range | undefined, options: 
 	return formatter.format(documentText, range, options);
 }
 
-/** 
+/**
  * Options used by {@linkcode modify} when computing the modification edit operations
  */
 export interface ModificationOptions {
@@ -397,10 +399,10 @@ export interface ModificationOptions {
 
 /**
  * Computes the edit operations needed to modify a value in the JSON document.
- * 
- * @param documentText The input text 
+ *
+ * @param documentText The input text
  * @param path The path of the value to change. The path represents either to the document root, a property or an array item.
- * If the path points to an non-existing property or item, it will be created. 
+ * If the path points to an non-existing property or item, it will be created.
  * @param value The new value for the specified property or item. If the value is undefined,
  * the property or item will be removed.
  * @param options Options
@@ -413,7 +415,7 @@ export function modify(text: string, path: JSONPath, value: any, options: Modifi
 
 /**
  * Applies edits to an input string.
- * @param text The input text 
+ * @param text The input text
  * @param edits Edit operations following the format described in {@linkcode EditResult}.
  * @returns The text with the applied edits.
  * @throws An error if the edit operations are not well-formed as described in {@linkcode EditResult}.
