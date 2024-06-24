@@ -389,16 +389,13 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 	// Important: Only pass copies of this to visitor functions to prevent accidental modification, and
 	// to not affect visitor functions which stored a reference to a previous JSONPath
 	const _jsonPath: JSONPath = [];
-	
+
 	// Depth of onXXXBegin() callbacks suppressed. onXXXEnd() decrements this if it isn't 0 already.
 	// Callbacks are only called when this value is 0.
 	let suppressedCallbacks = 0;
 
 	function toNoArgVisit(visitFunction?: (offset: number, length: number, startLine: number, startCharacter: number) => void): () => void {
 		return visitFunction ? () => suppressedCallbacks === 0 && visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
-	}
-	function toNoArgVisitWithPath(visitFunction?: (offset: number, length: number, startLine: number, startCharacter: number, pathSupplier: () => JSONPath) => void): () => void {
-		return visitFunction ? () => suppressedCallbacks === 0 && visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter(), () => _jsonPath.slice()) : () => true;
 	}
 	function toOneArgVisit<T>(visitFunction?: (arg: T, offset: number, length: number, startLine: number, startCharacter: number) => void): (arg: T) => void {
 		return visitFunction ? (arg: T) => suppressedCallbacks === 0 && visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
@@ -415,7 +412,7 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 					if (typeof cbReturn === 'boolean' && !cbReturn) { suppressedCallbacks = 1; }
 				}
 			}
-		: () => true;
+			: () => true;
 	}
 	function toEndVisit(visitFunction?: (offset: number, length: number, startLine: number, startCharacter: number) => void): () => void {
 		return visitFunction ?
@@ -423,7 +420,7 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 				if (suppressedCallbacks > 0) { suppressedCallbacks--; }
 				if (suppressedCallbacks === 0) { visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()); }
 			}
-		: () => true;
+			: () => true;
 	}
 
 	const onObjectBegin = toBeginVisit(visitor.onObjectBegin),
