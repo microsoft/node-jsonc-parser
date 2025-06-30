@@ -10,4 +10,4 @@ test/
 .eslintrc
 .gitignore
 .mocharc.json
-.eslintrc.json
+eslint.config.mjs
