@@ -1,12 +1,14 @@
 {
+	"include": ["src"],
 	"compilerOptions": {
 		"target": "es2020",
-		"module": "es6",
-		"moduleResolution": "node",
+		"module": "esnext",
+		"moduleResolution": "node16",
 		"sourceMap": true,
 		"declaration": true,
 		"stripInternal": true,
-		"outDir": "../lib/esm",
+		"outDir": "./lib/esm",
+		"rootDir": "./src",
 		"strict": true,
 		"preserveConstEnums": true,
 		"lib": [
