@@ -3,7 +3,7 @@ Scanner and parser for JSON with comments.
 
 [![npm Package](https://img.shields.io/npm/v/jsonc-parser.svg?style=flat-square)](https://www.npmjs.org/package/jsonc-parser)
 [![NPM Downloads](https://img.shields.io/npm/dm/jsonc-parser.svg)](https://npmjs.org/package/jsonc-parser)
-[![Build Status](https://github.com/microsoft/node-jsonc-parser/workflows/Tests/badge.svg)](https://github.com/microsoft/node-jsonc-parser/workflows/Tests)
+[![Build Status](https://github.com/microsoft/node-jsonc-parser/workflows/Tests/badge.svg)](https://github.com/microsoft/node-jsonc-parser/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Why?
