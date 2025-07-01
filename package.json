@@ -32,6 +32,6 @@
     "clean": "rimraf lib",
     "watch": "tsc -w -p ./src",
     "test": "npm run compile && mocha ./lib/umd/test",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint ."
   }
 }

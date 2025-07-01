@@ -27,5 +27,10 @@
         "no-unused-expressions": "warn",
         "no-duplicate-imports": "warn",
         "new-parens": "warn"
-    }
+    },
+    "overrides": [
+        {
+            "files": ["*.ts"]
+        }
+    ]
 }
