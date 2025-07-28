@@ -5,7 +5,8 @@
 'use strict';
 
 import * as assert from 'assert';
-import { FormattingOptions, Edit, ModificationOptions, modify } from '../main';
+import { suite, test } from 'mocha';
+import { Edit, FormattingOptions, ModificationOptions, modify } from '../main';
 
 suite('JSON - edits', () => {
 
@@ -30,19 +31,8 @@ suite('JSON - edits', () => {
 		keepLines: false
 	};
 
-	let formattingOptionsKeepLines: FormattingOptions = {
-		insertSpaces: true,
-		tabSize: 2,
-		eol: '\n',
-		keepLines: true
-	};
-
 	let options: ModificationOptions = {
 		formattingOptions
-	};
-
-	let optionsKeepLines: ModificationOptions = {
-		formattingOptions : formattingOptionsKeepLines
 	};
 
 	test('set property', () => {

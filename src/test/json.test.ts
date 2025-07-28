@@ -5,6 +5,7 @@
 'use strict';
 
 import * as assert from 'assert';
+import { suite, test } from 'mocha';
 import {
 	SyntaxKind, createScanner, parse, getLocation, Node, ParseError, parseTree, ParseErrorCode,
 	ParseOptions, Segment, findNodeAtLocation, getNodeValue, getNodePath, ScanError, visit, JSONVisitor, JSONPath
