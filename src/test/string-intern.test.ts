@@ -1,5 +1,6 @@
-import { cachedBreakLinesWithSpaces, cachedSpaces, supportedEols } from '../impl/string-intern';
 import * as assert from 'assert';
+import { suite, test } from 'mocha';
+import { cachedBreakLinesWithSpaces, cachedSpaces, supportedEols } from '../impl/string-intern';
 
 suite('string intern', () => {
   test('should correctly define spaces intern', () => {

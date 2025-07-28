@@ -5,6 +5,7 @@
 'use strict';
 
 import * as assert from 'assert';
+import { suite, test } from 'mocha';
 import * as Formatter from '../impl/format';
 import { Range } from '../main';
 
@@ -21,14 +22,8 @@ suite('JSON - formatter', () => {
 
 		const edits = Formatter.format(content, range, { tabSize: 2, insertSpaces, insertFinalNewline, eol: '\n', keepLines });
 
-		let lastEditOffset = content.length;
-
 		for (let i = edits.length - 1; i >= 0; i--) {
 			const edit = edits[i];
-			// assert(edit.offset >= 0 && edit.length >= 0 && edit.offset + edit.length <= content.length);
-			// assert(typeof edit.content === 'string');
-			// assert(lastEditOffset >= edit.offset + edit.length); // make sure all edits are ordered
-			lastEditOffset = edit.offset;
 			content = content.substring(0, edit.offset) + edit.content + content.substring(edit.offset + edit.length);
 		}
 

@@ -19,7 +19,7 @@ import {
 	SyntaxKind
 } from '../main';
 
-namespace ParseOptions {
+namespace ParseOptionsConfigs {
 	export const DEFAULT = {
 		allowTrailingComma: false
 	};
@@ -61,7 +61,7 @@ export function getLocation(text: string, position: number): Location {
 	try {
 
 		visit(text, {
-			onObjectBegin: (offset: number, length: number) => {
+			onObjectBegin: (offset: number) => {
 				if (position <= offset) {
 					throw earlyReturnException;
 				}
@@ -79,21 +79,21 @@ export function getLocation(text: string, position: number): Location {
 					throw earlyReturnException;
 				}
 			},
-			onObjectEnd: (offset: number, length: number) => {
+			onObjectEnd: (offset: number) => {
 				if (position <= offset) {
 					throw earlyReturnException;
 				}
 				previousNode = undefined;
 				segments.pop();
 			},
-			onArrayBegin: (offset: number, length: number) => {
+			onArrayBegin: (offset: number) => {
 				if (position <= offset) {
 					throw earlyReturnException;
 				}
 				previousNode = undefined;
 				segments.push(0);
 			},
-			onArrayEnd: (offset: number, length: number) => {
+			onArrayEnd: (offset: number) => {
 				if (position <= offset) {
 					throw earlyReturnException;
 				}
@@ -110,7 +110,7 @@ export function getLocation(text: string, position: number): Location {
 					throw earlyReturnException;
 				}
 			},
-			onSeparator: (sep: string, offset: number, length: number) => {
+			onSeparator: (sep: string, offset: number) => {
 				if (position <= offset) {
 					throw earlyReturnException;
 				}
@@ -159,7 +159,7 @@ export function getLocation(text: string, position: number): Location {
  * Parses the given text and returns the object the JSON content represents. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
  * Therefore always check the errors list to find out if the input was valid.
  */
-export function parse(text: string, errors: ParseError[] = [], options: ParseOptions = ParseOptions.DEFAULT): any {
+export function parse(text: string, errors: ParseError[] = [], options: ParseOptions = ParseOptionsConfigs.DEFAULT): any {
 	let currentProperty: string | null = null;
 	let currentParent: any = [];
 	const previousParents: any[] = [];
@@ -209,7 +209,7 @@ export function parse(text: string, errors: ParseError[] = [], options: ParseOpt
 /**
  * Parses the given text and returns a tree representation the JSON content. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
  */
-export function parseTree(text: string, errors: ParseError[] = [], options: ParseOptions = ParseOptions.DEFAULT): Node | undefined {
+export function parseTree(text: string, errors: ParseError[] = [], options: ParseOptions = ParseOptionsConfigs.DEFAULT): Node | undefined {
 	let currentParent: NodeImpl = { type: 'array', offset: -1, length: -1, children: [], parent: undefined }; // artificial root
 
 	function ensurePropertyComplete(endOffset: number) {
@@ -239,7 +239,7 @@ export function parseTree(text: string, errors: ParseError[] = [], options: Pars
 			currentParent = currentParent.parent!;
 			ensurePropertyComplete(offset + length);
 		},
-		onArrayBegin: (offset: number, length: number) => {
+		onArrayBegin: (offset: number) => {
 			currentParent = onValue({ type: 'array', offset, length: -1, parent: currentParent, children: [] });
 		},
 		onArrayEnd: (offset: number, length: number) => {
@@ -251,7 +251,7 @@ export function parseTree(text: string, errors: ParseError[] = [], options: Pars
 			onValue({ type: getNodeType(value), offset, length, parent: currentParent, value });
 			ensurePropertyComplete(offset + length);
 		},
-		onSeparator: (sep: string, offset: number, length: number) => {
+		onSeparator: (sep: string, offset: number) => {
 			if (currentParent.type === 'property') {
 				if (sep === ':') {
 					currentParent.colonOffset = offset;
@@ -335,7 +335,7 @@ export function getNodeValue(node: Node): any {
 	switch (node.type) {
 		case 'array':
 			return node.children!.map(getNodeValue);
-		case 'object':
+		case 'object': {
 			const obj = Object.create(null);
 			for (let prop of node.children!) {
 				const valueNode = prop.children![1];
@@ -344,6 +344,7 @@ export function getNodeValue(node: Node): any {
 				}
 			}
 			return obj;
+		}
 		case 'null':
 		case 'string':
 		case 'number':
@@ -383,7 +384,7 @@ export function findNodeAtOffset(node: Node, offset: number, includeRightBound =
 /**
  * Parses the given text and invokes the visitor functions for each object, array and literal reached.
  */
-export function visit(text: string, visitor: JSONVisitor, options: ParseOptions = ParseOptions.DEFAULT): any {
+export function visit(text: string, visitor: JSONVisitor, options: ParseOptions = ParseOptionsConfigs.DEFAULT): any {
 
 	const _scanner = createScanner(text, false);
 	// Important: Only pass copies of this to visitor functions to prevent accidental modification, and
@@ -512,16 +513,17 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 
 	function parseLiteral(): boolean {
 		switch (_scanner.getToken()) {
-			case SyntaxKind.NumericLiteral:
-				const tokenValue = _scanner.getTokenValue();
-				let value = Number(tokenValue);
+			case SyntaxKind.NumericLiteral: {
+					const tokenValue = _scanner.getTokenValue();
+					let value = Number(tokenValue);
 
-				if (isNaN(value)) {
-					handleError(ParseErrorCode.InvalidNumberFormat);
-					value = 0;
+					if (isNaN(value)) {
+						handleError(ParseErrorCode.InvalidNumberFormat);
+						value = 0;
+					}
+
+					onLiteralValue(value);
 				}
-
-				onLiteralValue(value);
 				break;
 			case SyntaxKind.NullKeyword:
 				onLiteralValue(null);

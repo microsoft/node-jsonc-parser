@@ -125,7 +125,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 				const ch2 = text.charCodeAt(pos++);
 				switch (ch2) {
 					case CharacterCodes.doubleQuote:
-						result += '\"';
+						result += '"';
 						break;
 					case CharacterCodes.backslash:
 						result += '\\';
@@ -148,12 +148,13 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 					case CharacterCodes.t:
 						result += '\t';
 						break;
-					case CharacterCodes.u:
-						const ch3 = scanHexDigits(4, true);
-						if (ch3 >= 0) {
-							result += String.fromCharCode(ch3);
-						} else {
-							scanError = ScanError.InvalidUnicode;
+					case CharacterCodes.u: {
+							const ch3 = scanHexDigits(4, true);
+							if (ch3 >= 0) {
+								result += String.fromCharCode(ch3);
+							} else {
+								scanError = ScanError.InvalidUnicode;
+							}
 						}
 						break;
 					default:
@@ -245,7 +246,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 				return token = SyntaxKind.StringLiteral;
 
 			// comments
-			case CharacterCodes.slash:
+			case CharacterCodes.slash: {
 				const start = pos - 1;
 				// Single-line comment
 				if (text.charCodeAt(pos + 1) === CharacterCodes.slash) {
@@ -301,6 +302,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 				value += String.fromCharCode(code);
 				pos++;
 				return token = SyntaxKind.Unknown;
+			}
 
 			// numbers
 			case CharacterCodes.minus:
@@ -312,6 +314,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 			// found a minus, followed by a number so
 			// we fall through to proceed with scanning
 			// numbers
+			// eslint-disable-next-line no-fallthrough
 			case CharacterCodes._0:
 			case CharacterCodes._1:
 			case CharacterCodes._2:
