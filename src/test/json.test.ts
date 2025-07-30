@@ -431,8 +431,8 @@ suite('JSON', () => {
 					}
 				]
 			}, [
-			{ error: ParseErrorCode.PropertyNameExpected, offset: 26, length: 1 },
-			{ error: ParseErrorCode.ValueExpected, offset: 26, length: 1 }
+			{ error: ParseErrorCode.PropertyNameExpected, offset: 26, length: 1, startLine: 0, startCharacter: 26 },
+			{ error: ParseErrorCode.ValueExpected, offset: 26, length: 1, startLine: 0, startCharacter: 26 }
 		]);
 	});
 
@@ -678,7 +678,7 @@ suite('JSON', () => {
 					], colonOffset: 37
 				}
 			]
-		}, [{ error: ParseErrorCode.ColonExpected, offset: 49, length: 1 }]);
+		}, [{ error: ParseErrorCode.ColonExpected, offset: 49, length: 1, startLine: 0, startCharacter: 49 }]);
 	});
 
 	test('tree: find location', () => {

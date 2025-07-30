@@ -144,6 +144,8 @@ export interface ParseError {
 	error: ParseErrorCode;
 	offset: number;
 	length: number;
+	startLine: number;
+	startCharacter: number;
 }
 
 export const enum ParseErrorCode {
