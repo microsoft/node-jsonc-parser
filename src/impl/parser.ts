@@ -197,8 +197,8 @@ export function parse(text: string, errors: ParseError[] = [], options: ParseOpt
 			currentParent = previousParents.pop();
 		},
 		onLiteralValue: onValue,
-		onError: (error: ParseErrorCode, offset: number, length: number) => {
-			errors.push({ error, offset, length });
+		onError: (error: ParseErrorCode, offset: number, length: number, startLine: number, startCharacter: number) => {
+			errors.push({ error, offset, length, startLine, startCharacter });
 		}
 	};
 	visit(text, visitor, options);
@@ -260,8 +260,8 @@ export function parseTree(text: string, errors: ParseError[] = [], options: Pars
 				}
 			}
 		},
-		onError: (error: ParseErrorCode, offset: number, length: number) => {
-			errors.push({ error, offset, length });
+		onError: (error: ParseErrorCode, offset: number, length: number, startLine: number, startCharacter: number) => {
+			errors.push({ error, offset, length, startLine, startCharacter });
 		}
 	};
 	visit(text, visitor, options);
