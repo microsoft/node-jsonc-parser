@@ -21,7 +21,7 @@ import {
 
 namespace ParseOptionsConfigs {
 	export const DEFAULT = {
-		allowTrailingComma: false
+		allowTrailingComma: true
 	};
 }
 
