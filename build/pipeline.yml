@@ -55,6 +55,7 @@ extends:
           - script: npm test
             displayName: Test npm package
 
+        tag: ${{ parameters.quality }}
         preReleaseTag: next
         publishPackage: ${{ parameters.publishPackage }}
         publishRequiresApproval: false
