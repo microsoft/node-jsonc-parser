@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import * as assert from 'assert';
-import { suite, test } from 'mocha';
+import * as assert from 'node:assert';
+import { suite, test } from 'node:test';
 import { Edit, FormattingOptions, ModificationOptions, modify } from '../main';
 
 suite('JSON - edits', () => {

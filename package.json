@@ -15,12 +15,10 @@
     "url": "https://github.com/microsoft/node-jsonc-parser/issues"
   },
   "devDependencies": {
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^18.x",
+    "@types/node": "22.x",
     "@typescript-eslint/eslint-plugin": "^8.35.1",
     "@typescript-eslint/parser": "^8.35.1",
     "eslint": "^9.30.0",
-    "mocha": "^11.7.1",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3"
   },
@@ -31,7 +29,7 @@
     "remove-sourcemap-refs": "node ./build/remove-sourcemap-refs.js",
     "clean": "rimraf lib",
     "watch": "tsc -w -p ./src",
-    "test": "npm run compile && mocha ./lib/umd/test",
+    "test": "npm run compile && node --enable-source-maps --test ./lib/umd/test/**/*.test.js",
     "lint": "eslint src/**/*.ts"
   }
 }
