@@ -11,7 +11,7 @@
 			"runtimeArgs": [
 				"--enable-source-maps",
 				"--test",
-				"./lib/esm/test/**/*.test.js"
+				"./lib/esm/test/*.test.js"
 			],
 			"env": {},
 			"sourceMaps": true,
