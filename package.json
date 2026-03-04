@@ -33,7 +33,7 @@
     "remove-sourcemap-refs": "node ./build/remove-sourcemap-refs.cjs",
     "clean": "rimraf lib",
     "watch": "tsc -w -p ./src",
-    "test": "npm run compile && node --enable-source-maps --test ./lib/esm/test/**/*.test.js",
+    "test": "npm run compile && node --enable-source-maps --test ./lib/esm/test/*.test.js",
     "lint": "eslint src/**/*.ts"
   }
 }
