@@ -16,6 +16,13 @@ resources:
       endpoint: Monaco
 
 parameters:
+  - name: quality
+    displayName: Quality
+    type: string
+    default: latest
+    values:
+      - latest
+      - next
   - name: publishPackage
     displayName: 🚀 Publish jsonc-parser
     type: boolean
@@ -48,4 +55,6 @@ extends:
           - script: npm test
             displayName: Test npm package
 
+        preReleaseTag: next
         publishPackage: ${{ parameters.publishPackage }}
+        publishRequiresApproval: false
