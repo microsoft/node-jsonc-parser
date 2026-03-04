@@ -22,6 +22,8 @@ JSONC is JSON with JavaScript style comments. This node module provides a scanne
 Installation
 ------------
 
+`jsonc-parser` is published as an ESM-only package.
+
 ```
 npm install --save jsonc-parser
 ```

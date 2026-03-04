@@ -11,11 +11,11 @@
 			"runtimeArgs": [
 				"--enable-source-maps",
 				"--test",
-				"./lib/umd/test/**/*.test.js"
+				"./lib/esm/test/**/*.test.js"
 			],
 			"env": {},
 			"sourceMaps": true,
-			"outFiles": ["${workspaceRoot}/lib/umd/**/*.js"],
+			"outFiles": ["${workspaceRoot}/lib/esm/**/*.js"],
 			"preLaunchTask": "npm: watch"
 		}
 	]

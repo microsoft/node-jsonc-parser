@@ -1,10 +1,15 @@
 {
   "name": "jsonc-parser",
-  "version": "3.3.1",
+  "version": "4.0.0-next.1",
   "description": "Scanner and parser for JSON with comments.",
-  "main": "./lib/umd/main.js",
-  "typings": "./lib/umd/main.d.ts",
-  "module": "./lib/esm/main.js",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./lib/esm/main.d.ts",
+      "import": "./lib/esm/main.js"
+    }
+  },
+  "types": "./lib/esm/main.d.ts",
   "author": "Microsoft Corporation",
   "repository": {
     "type": "git",
@@ -23,13 +28,12 @@
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "prepack": "npm run clean && npm run compile-esm && npm run test && npm run remove-sourcemap-refs",
+    "prepack": "npm run clean && npm run compile && npm run test && npm run remove-sourcemap-refs",
     "compile": "tsc -p ./src && npm run lint",
-    "compile-esm": "tsc -p ./src/tsconfig.esm.json",
-    "remove-sourcemap-refs": "node ./build/remove-sourcemap-refs.js",
+    "remove-sourcemap-refs": "node ./build/remove-sourcemap-refs.cjs",
     "clean": "rimraf lib",
     "watch": "tsc -w -p ./src",
-    "test": "npm run compile && node --enable-source-maps --test ./lib/umd/test/**/*.test.js",
+    "test": "npm run compile && node --enable-source-maps --test ./lib/esm/test/**/*.test.js",
     "lint": "eslint src/**/*.ts"
   }
 }
