@@ -11,3 +11,4 @@ test/
 .gitignore
 .mocharc.json
 .eslintrc.json
+eslint.config.cjs
