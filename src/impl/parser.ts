@@ -174,7 +174,7 @@ export function parse(text: string, errors: ParseError[] = [], options: ParseOpt
 
 	const visitor: JSONVisitor = {
 		onObjectBegin: () => {
-			const object = {};
+			const object = Object.create(null);
 			onValue(object);
 			previousParents.push(currentParent);
 			currentParent = object;

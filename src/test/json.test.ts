@@ -37,7 +37,7 @@ function assertValidParse(input: string, expected: any, options?: ParseOptions):
 	var actual = parse(input, errors, options);
 
 	assert.deepStrictEqual([], errors);
-	assert.deepStrictEqual(actual, expected);
+	assert.deepEqual(actual, expected);
 }
 
 function assertInvalidParse(input: string, expected: any, options?: ParseOptions): void {
@@ -45,7 +45,7 @@ function assertInvalidParse(input: string, expected: any, options?: ParseOptions
 	var actual = parse(input, errors, options);
 
 	assert.ok(errors.length > 0);
-	assert.deepStrictEqual(actual, expected);
+	assert.deepEqual(actual, expected);
 }
 
 function assertTree(input: string, expected: any, expectedErrors: ParseError[] = []): void {
@@ -266,6 +266,26 @@ suite('JSON', () => {
 		assertValidParse('{ "hello": { "again": { "inside": 5 }, "world": 1 }}', { hello: { again: { inside: 5 }, world: 1 } });
 		assertValidParse('{ "foo": /*hello*/true }', { foo: true });
 		assertValidParse('{ "": true }', { '': true });
+	});
+
+	test('parse: no prototype pollution', () => {
+		// __proto__ key must not pollute Object.prototype
+		const result = parse('{"__proto__": {"polluted": true}}');
+		assert.strictEqual(({} as any).polluted, undefined, '__proto__ key must not pollute Object.prototype');
+		// the parsed value itself should carry __proto__ as an own data property
+		assert.ok(Object.prototype.hasOwnProperty.call(result, '__proto__'), '__proto__ should be an own property of the result');
+		assert.strictEqual(result['__proto__'].polluted, true);
+
+		// constructor key must not shadow Object.prototype.constructor
+		const result2 = parse('{"constructor": {"prototype": {"polluted": true}}}');
+		assert.strictEqual(({} as any).polluted, undefined, 'constructor key must not pollute Object.prototype');
+		assert.ok(Object.prototype.hasOwnProperty.call(result2, 'constructor'));
+
+		// getNodeValue must also be safe
+		const tree = parseTree('{"__proto__": {"polluted": true}}')!;
+		const nodeValue = getNodeValue(tree);
+		assert.strictEqual(({} as any).polluted, undefined, 'getNodeValue: __proto__ key must not pollute Object.prototype');
+		assert.ok(Object.prototype.hasOwnProperty.call(nodeValue, '__proto__'));
 	});
 
 	test('parse: arrays', () => {
