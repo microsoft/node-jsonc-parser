@@ -214,6 +214,18 @@ suite('JSON - edits', () => {
 		assertEdit(content, edits, '// This is a comment\n[\n  1,\n  "foo"\n]');
 	});
 
+	test('remove last string item in array without formatting', () => {
+		let content = '{"items":["1","2"]}';
+		let edits = modify(content, ['items', 1], void 0, {});
+		assertEdit(content, edits, '{"items":["1"]}');
+	});
+
+	test('remove last number item in array without formatting', () => {
+		let content = '{"items":[1,2]}';
+		let edits = modify(content, ['items', 1], void 0, {});
+		assertEdit(content, edits, '{"items":[1]}');
+	});
+
 	test('set property without formatting', () => {
 		let content = '{\n  "x": [1, 2, 3],\n  "y": 0\n}';
 
