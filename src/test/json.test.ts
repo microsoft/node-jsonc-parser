@@ -48,9 +48,9 @@ function assertInvalidParse(input: string, expected: any, options?: ParseOptions
 	assert.deepStrictEqual(actual, expected);
 }
 
-function assertTree(input: string, expected: any, expectedErrors: ParseError[] = []): void {
+function assertTree(input: string, expected: any, expectedErrors: ParseError[] = [], options?: ParseOptions): void {
 	var errors: ParseError[] = [];
-	var actual = parseTree(input, errors);
+	var actual = parseTree(input, errors, options);
 
 	assert.deepStrictEqual(errors, expectedErrors);
 	let checkParent = (node: Node | undefined) => {
@@ -275,9 +275,16 @@ suite('JSON', () => {
 		assertValidParse('[ { "a": null } ]', [{ a: null }]);
 	});
 
-	test('parse: objects with errors', () => {
+	test('parse: objects with errors with no trailing comma', () => {
+        let options = { allowTrailingComma: false };
+        assertInvalidParse('{ "foo": true, }', { foo: true }, options);
+        assertInvalidParse('{ "hello": [], }', { hello: [] }, options);
+        assertInvalidParse('{ "hello": [], "world": {}, }', { hello: [], world: {} }, options);
+        assertInvalidParse('[ 1, 2, ]', [1, 2], options);
+    });
+
+    test('parse objects with errors', () => {
 		assertInvalidParse('{,}', {});
-		assertInvalidParse('{ "foo": true, }', { foo: true });
 		assertInvalidParse('{ "bar": 8 "xoo": "foo" }', { bar: 8, xoo: 'foo' });
 		assertInvalidParse('{ ,"bar": 8 }', { bar: 8 });
 		assertInvalidParse('{ ,"bar": 8, "foo" }', { bar: 8 });
@@ -307,17 +314,12 @@ suite('JSON', () => {
 	});
 
 	test('parse: trailing comma', () => {
-		let options = { allowTrailingComma: true };
-		assertValidParse('{ "hello": [], }', { hello: [] }, options);
-		assertValidParse('{ "hello": [] }', { hello: [] }, options);
-		assertValidParse('{ "hello": [], "world": {}, }', { hello: [], world: {} }, options);
-		assertValidParse('{ "hello": [], "world": {} }', { hello: [], world: {} }, options);
-		assertValidParse('[ 1, 2, ]', [1, 2], options);
-		assertValidParse('[ 1, 2 ]', [1, 2], options);
-
-		assertInvalidParse('{ "hello": [], }', { hello: [] });
-		assertInvalidParse('{ "hello": [], "world": {}, }', { hello: [], world: {} });
-		assertInvalidParse('[ 1, 2, ]', [1, 2]);
+		assertValidParse('{ "hello": [], }', { hello: [] });
+		assertValidParse('{ "hello": [] }', { hello: [] });
+		assertValidParse('{ "hello": [], "world": {}, }', { hello: [], world: {} });
+		assertValidParse('{ "hello": [], "world": {} }', { hello: [], world: {} });
+		assertValidParse('[ 1, 2, ]', [1, 2]);
+		assertValidParse('[ 1, 2 ]', [1, 2]);
 	});
 	test('location: properties', () => {
 		assertLocation('|{ "foo": "bar" }', [], void 0, false);
@@ -432,8 +434,8 @@ suite('JSON', () => {
 				]
 			}, [
 			{ error: ParseErrorCode.PropertyNameExpected, offset: 26, length: 1, startLine: 0, startCharacter: 26 },
-			{ error: ParseErrorCode.ValueExpected, offset: 26, length: 1, startLine: 0, startCharacter: 26 }
-		]);
+			{ error: ParseErrorCode.ValueExpected, offset: 26, length: 1, startLine: 0, startCharacter: 26 },
+		], { allowTrailingComma: false });
 	});
 
 	test('visit: object', () => {
