@@ -6,7 +6,7 @@
 
 import * as assert from 'node:assert';
 import { suite, test } from 'node:test';
-import { Edit, FormattingOptions, ModificationOptions, modify } from '../main.js';
+import { Edit, FormattingOptions, ModificationOptions, modify, applyEdits, parse, ParseError } from '../main.js';
 
 suite('JSON - edits', () => {
 
@@ -124,6 +124,52 @@ suite('JSON - edits', () => {
 		content = '{\n  "x": "y", "a": []\n}';
 		edits = modify(content, ['a'], undefined, options);
 		assertEdit(content, edits, '{\n  "x": "y"\n}');
+	});
+
+	for (const eol of ['\n', '\r\n']) {
+		for (const formatted of [true, false]) {
+			const commentOptions: ModificationOptions = formatted ? { formattingOptions: { ...formattingOptions, eol } } : {};
+			const cases: [string, string[], unknown, string][] = [
+				['{\n  "a": 1 // keep\n}', ['b'], 2, '{\n  "a": 1, // keep\n  "b": 2\n}'],
+				['{\n  "a": 1, // keep\n}', ['b'], 2, '{\n  "a": 1, // keep\n  "b": 2,\n}'],
+				['{\n  "a": 1, // keep\n  "b": 2\n}', ['b'], undefined, '{\n  "a": 1 // keep\n}'],
+				['{\n  "a": 1,\n  "b": 2 // remove\n}', ['b'], undefined, '{\n  "a": 1\n}'],
+				['{\n  "a": 1, // keep\n  "b": 2, // remove\n}', ['b'], undefined, '{\n  "a": 1 // keep\n}'],
+				['{\n  "a": 1, // keep\n  "b": 2, // remove\n  "c": 3\n}', ['b'], undefined, '{\n  "a": 1, // keep\n  "c": 3\n}'],
+				['{\n  "a": 1 // remove\n}', ['a'], undefined, '{\n}']
+			];
+			for (const [input, path, value, output] of cases) {
+				test(`property inline comments (${JSON.stringify(eol)}, format=${formatted}): ${input}, value=${value}`, () => {
+					const content = input.replace(/\n/g, eol);
+					const edits = modify(content, path, value, commentOptions);
+					if (formatted) {
+						assertEdit(content, edits, output.replace(/\n/g, eol));
+					} else {
+						const result = applyEdits(content, edits);
+						const errors: ParseError[] = [];
+						assert.deepEqual(parse(result, errors, { allowTrailingComma: true }), parse(output));
+						assert.deepEqual(errors, []);
+						assert.ok(!result.includes('// remove'));
+						if (input.includes('// keep')) {
+							assert.match(result, /"a": 1,? *\/\/ keep/);
+						}
+					}
+				});
+			}
+		}
+	}
+
+	test('property block comments and following standalone comments', () => {
+		const content = '{\n  "a": 1 /* keep */\n  // standalone\n}';
+		assertEdit(content, modify(content, ['b'], 2, options), '{\n  "a": 1, /* keep */\n  "b": 2\n  // standalone\n}');
+		const remove = '{\n  "a": 1, /* keep */\n  "b": 2 /* remove */\n}';
+		assertEdit(remove, modify(remove, ['b'], undefined, options), '{\n  "a": 1 /* keep */\n}');
+	});
+
+	test('insert property after inline comment at custom index', () => {
+		const content = '{\n  "a": 1, // keep\n  "c": 3\n}';
+		assertEdit(content, modify(content, ['b'], 2, { ...options, getInsertionIndex: () => 1 }),
+			'{\n  "a": 1, // keep\n  "b": 2,\n  "c": 3\n}');
 	});
 
 	test('set item', () => {
