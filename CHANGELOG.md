@@ -1,3 +1,9 @@
+4.0.0-next.1 2026-03-04
+=================
+- package is now ESM-only.
+- remove UMD build and package entrypoints.
+
+
 3.3.0 2022-06-24
 =================
 - `JSONVisitor.onObjectBegin` and `JSONVisitor.onArrayBegin` can now return `false` to instruct the visitor that no children should be visited.

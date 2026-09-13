@@ -4,9 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import { Edit, ParseError, Node, JSONPath, Segment, ModificationOptions } from '../main';
-import { format, isEOL } from './format';
-import { parseTree, findNodeAtLocation } from './parser';
+import { Edit, ParseError, Node, JSONPath, Segment, ModificationOptions } from '../main.js';
+import { format, isEOL } from './format.js';
+import { parseTree, findNodeAtLocation } from './parser.js';
 
 export function removeProperty(text: string, path: JSONPath, options: ModificationOptions): Edit[] {
 	return setProperty(text, path, void 0, options);
@@ -109,7 +109,7 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, op
 				let previous = parent.children[removalIndex - 1];
 				let offset = previous.offset + previous.length;
 				let parentEndOffset = parent.offset + parent.length;
-				edit = { offset, length: parentEndOffset - 2 - offset, content: '' };
+				edit = { offset, length: parentEndOffset - 1 - offset, content: '' };
 			} else {
 				edit = { offset: toRemove.offset, length: parent.children[removalIndex + 1].offset - toRemove.offset, content: '' };
 			}

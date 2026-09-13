@@ -4,10 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import * as assert from 'assert';
-import { suite, test } from 'mocha';
-import * as Formatter from '../impl/format';
-import { Range } from '../main';
+import * as assert from 'node:assert';
+import { suite, test } from 'node:test';
+import * as Formatter from '../impl/format.js';
+import { Range } from '../main.js';
 
 suite('JSON - formatter', () => {
 

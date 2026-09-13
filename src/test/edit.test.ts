@@ -4,20 +4,20 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import * as assert from 'assert';
-import { suite, test } from 'mocha';
-import { Edit, FormattingOptions, ModificationOptions, modify } from '../main';
+import * as assert from 'node:assert';
+import { suite, test } from 'node:test';
+import { Edit, FormattingOptions, ModificationOptions, modify } from '../main.js';
 
 suite('JSON - edits', () => {
 
 	function assertEdit(content: string, edits: Edit[], expected: string) {
-		assert(edits);
+		assert.ok(edits);
 		let lastEditOffset = content.length;
 		for (let i = edits.length - 1; i >= 0; i--) {
 			let edit = edits[i];
-			assert(edit.offset >= 0 && edit.length >= 0 && edit.offset + edit.length <= content.length);
-			assert(typeof edit.content === 'string');
-			assert(lastEditOffset >= edit.offset + edit.length); // make sure all edits are ordered
+			assert.ok(edit.offset >= 0 && edit.length >= 0 && edit.offset + edit.length <= content.length);
+			assert.ok(typeof edit.content === 'string');
+			assert.ok(lastEditOffset >= edit.offset + edit.length); // make sure all edits are ordered
 			lastEditOffset = edit.offset;
 			content = content.substring(0, edit.offset) + edit.content + content.substring(edit.offset + edit.length);
 		}
@@ -212,6 +212,18 @@ suite('JSON - edits', () => {
 		let content = '// This is a comment\n[\n  1,\n  "foo",\n  "bar"\n]';
 		let edits = modify(content, [2], void 0, options);
 		assertEdit(content, edits, '// This is a comment\n[\n  1,\n  "foo"\n]');
+	});
+
+	test('remove last string item in array without formatting', () => {
+		let content = '{"items":["1","2"]}';
+		let edits = modify(content, ['items', 1], void 0, {});
+		assertEdit(content, edits, '{"items":["1"]}');
+	});
+
+	test('remove last number item in array without formatting', () => {
+		let content = '{"items":[1,2]}';
+		let edits = modify(content, ['items', 1], void 0, {});
+		assertEdit(content, edits, '{"items":[1]}');
 	});
 
 	test('set property without formatting', () => {
