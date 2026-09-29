@@ -268,6 +268,25 @@ suite('JSON', () => {
 		assertValidParse('{ "": true }', { '': true });
 	});
 
+	test('parse: __proto__ own property is preserved without polluting prototype', () => {
+		const errors: ParseError[] = [];
+		const actual = parse('{ "__proto__": { "polluted": true } }', errors);
+
+		assert.deepStrictEqual({
+			hasOwn: Object.prototype.hasOwnProperty.call(actual, '__proto__'),
+			prototype: Object.getPrototypeOf(actual),
+			polluted: actual.__proto__.polluted,
+			objectPrototypePolluted: (Object.prototype as Record<string, unknown>).polluted,
+			errors,
+		}, {
+			hasOwn: true,
+			prototype: Object.prototype,
+			polluted: true,
+			objectPrototypePolluted: undefined,
+			errors: [],
+		});
+	});
+
 	test('parse: arrays', () => {
 		assertValidParse('[]', []);
 		assertValidParse('[ [],  [ [] ]]', [[], [[]]]);

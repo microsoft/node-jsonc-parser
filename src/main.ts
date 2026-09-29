@@ -104,6 +104,11 @@ export const getLocation: (text: string, position: number) => Location = parser.
 export const parse: (text: string, errors?: ParseError[], options?: ParseOptions) => any = parser.parse;
 
 /**
+ * Assigns `value` to `obj[key]`, preserving `__proto__` as an own data property without invoking the prototype setter.
+ */
+export const setObjectProperty: (obj: Record<string, unknown>, key: string, value: unknown) => void = parser.setObjectProperty;
+
+/**
  * Parses the given text and returns a tree representation the JSON content. On invalid input, the parser tries to be as fault tolerant as possible, but still return a result.
  */
 export const parseTree: (text: string, errors?: ParseError[], options?: ParseOptions) => Node | undefined = parser.parseTree;

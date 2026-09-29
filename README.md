@@ -102,6 +102,11 @@ export interface ParseOptions {
 export declare function parse(text: string, errors?: {error: ParseErrorCode;}[], options?: ParseOptions): any;
 
 /**
+ * Assigns `value` to `obj[key]`, preserving `__proto__` as an own data property without invoking the prototype setter.
+ */
+export declare function setObjectProperty(obj: Record<string, unknown>, key: string, value: unknown): void;
+
+/**
  * Parses the given text and invokes the visitor functions for each object, array and literal reached.
  */
 export declare function visit(text: string, visitor: JSONVisitor, options?: ParseOptions): any;
