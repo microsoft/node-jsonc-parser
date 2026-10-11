@@ -28,11 +28,87 @@ Installation
 npm install --save jsonc-parser
 ```
 
+Usage
+-----
+
+Save the following example in an `.mjs` file and run it with Node.js after installing the package:
+
+```javascript
+import { parse, printParseErrorCode, modify, applyEdits } from 'jsonc-parser';
+
+const text = `{
+  // Port used by the application
+  "port": 8080
+}`;
+const errors = [];
+const config = parse(text, errors);
+
+// The parser can return a partial result for invalid input. Check errors first.
+if (errors.length > 0) {
+  throw new Error(errors.map(({ error, offset }) =>
+    `${printParseErrorCode(error)} at offset ${offset}`).join(', '));
+}
+console.log(config.port); // 8080
+
+// Edit the original text to retain its comment, rather than serializing config.
+const edits = modify(text, ['port'], 9090, {
+  formattingOptions: { insertSpaces: true, tabSize: 2, eol: '\n' }
+});
+const updatedText = applyEdits(text, edits);
+console.log(updatedText); // The comment is retained and port is now 9090.
+```
+
+Comments are allowed by default. To validate strict JSON, pass `{ disallowComments: true }` as the third argument to `parse`. Trailing commas require `{ allowTrailingComma: true }`.
+
+The scanner exposes tokens and their offsets without building an object. Passing `true` to `createScanner` skips whitespace and comments; scanner errors describe individual tokens, not whether the complete document is valid JSON.
+
+```javascript
+import { createScanner, SyntaxKind, ScanError } from 'jsonc-parser';
+
+const scanner = createScanner('{ "enabled": true }', true);
+for (let token = scanner.scan(); token !== SyntaxKind.EOF; token = scanner.scan()) {
+  if (scanner.getTokenError() !== ScanError.None) {
+    throw new Error(`Scan error ${scanner.getTokenError()} at offset ${scanner.getTokenOffset()}`);
+  }
+  console.log(token, scanner.getTokenOffset(), scanner.getTokenValue());
+}
+```
+
 API
 ---
 
 ### Scanner:
 ```typescript
+
+export const enum ScanError {
+    None = 0,
+    UnexpectedEndOfComment = 1,
+    UnexpectedEndOfString = 2,
+    UnexpectedEndOfNumber = 3,
+    InvalidUnicode = 4,
+    InvalidEscapeCharacter = 5,
+    InvalidCharacter = 6
+}
+
+export const enum SyntaxKind {
+    OpenBraceToken = 1,
+    CloseBraceToken = 2,
+    OpenBracketToken = 3,
+    CloseBracketToken = 4,
+    CommaToken = 5,
+    ColonToken = 6,
+    NullKeyword = 7,
+    TrueKeyword = 8,
+    FalseKeyword = 9,
+    StringLiteral = 10,
+    NumericLiteral = 11,
+    LineCommentTrivia = 12,
+    BlockCommentTrivia = 13,
+    LineBreakTrivia = 14,
+    Trivia = 15,
+    Unknown = 16,
+    EOF = 17
+}
 
 /**
  * Creates a JSON scanner on the given text.
@@ -89,6 +165,25 @@ export interface JSONScanner {
 
 ### Parser:
 ```typescript
+
+export const enum ParseErrorCode {
+    InvalidSymbol = 1,
+    InvalidNumberFormat = 2,
+    PropertyNameExpected = 3,
+    ValueExpected = 4,
+    ColonExpected = 5,
+    CommaExpected = 6,
+    CloseBraceExpected = 7,
+    CloseBracketExpected = 8,
+    EndOfFileExpected = 9,
+    InvalidCommentToken = 10,
+    UnexpectedEndOfComment = 11,
+    UnexpectedEndOfString = 12,
+    UnexpectedEndOfNumber = 13,
+    InvalidUnicode = 14,
+    InvalidEscapeCharacter = 15,
+    InvalidCharacter = 16
+}
 
 export interface ParseOptions {
     disallowComments?: boolean;
