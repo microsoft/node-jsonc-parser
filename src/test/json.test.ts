@@ -716,6 +716,14 @@ suite('JSON', () => {
 		assertNodeAtLocation(root, ['key3', 'key32'], 32);
 	});
 
+	test('tree: find effective value for duplicate properties', () => {
+		const text = '{"key":1,"key":2,"outer":{"key":3,"key":4},"outer":{"key":5}}';
+		const root = parseTree(text);
+		assert.deepStrictEqual(parse(text), { key: 2, outer: { key: 5 } });
+		assertNodeAtLocation(root, ['key'], 2);
+		assertNodeAtLocation(root, ['outer', 'key'], 5);
+	});
+
 	test('location: matches', () => {
 		assertMatchesLocation('{ "dependencies": { | } }', ['dependencies']);
 		assertMatchesLocation('{ "dependencies": { "fo| } }', ['dependencies']);

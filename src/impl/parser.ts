@@ -304,7 +304,9 @@ export function findNodeAtLocation(root: Node | undefined, path: JSONPath): Node
 				return undefined;
 			}
 			let found = false;
-			for (const propertyNode of node.children) {
+			// Match the last property, as parse and getNodeValue do for duplicate keys.
+			for (let i = node.children.length - 1; i >= 0; i--) {
+				const propertyNode = node.children[i];
 				if (Array.isArray(propertyNode.children) && propertyNode.children[0].value === segment && propertyNode.children.length === 2) {
 					node = propertyNode.children[1];
 					found = true;
