@@ -141,13 +141,27 @@ export function getLocation(text: string, position: number): Location {
 		previousNode,
 		isAtPropertyKey,
 		matches: (pattern: Segment[]) => {
+			// 2026-10-10: Retry the suffix after ** with progressively longer matches.
 			let k = 0;
-			for (let i = 0; k < pattern.length && i < segments.length; i++) {
-				if (pattern[k] === segments[i] || pattern[k] === '*') {
+			let i = 0;
+			let wildcardIndex = -1;
+			let wildcardSegment = 0;
+			while (k < pattern.length && i < segments.length) {
+				if (pattern[k] === '**') {
+					wildcardIndex = k++;
+					wildcardSegment = i;
+				} else if (pattern[k] === segments[i] || pattern[k] === '*') {
 					k++;
-				} else if (pattern[k] !== '**') {
+					i++;
+				} else if (wildcardIndex !== -1) {
+					k = wildcardIndex + 1;
+					i = ++wildcardSegment;
+				} else {
 					return false;
 				}
+			}
+			while (pattern[k] === '**') {
+				k++;
 			}
 			return k === pattern.length;
 		}

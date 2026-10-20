@@ -725,5 +725,33 @@ suite('JSON', () => {
 		assertMatchesLocation('{ "dependencies": { "fo": | } }', ['dependencies', '*']);
 	});
 
+	// 2026-10-10: Recursive wildcards may consume zero segments at any path depth.
+	test('location: recursive wildcard matches no segments', () => {
+		assertMatchesLocation('|{}', ['**']);
+		assertMatchesLocation('{ "a": |1 }', ['a', '**']);
+		assertMatchesLocation('{ "a": |1 }', ['**', 'a']);
+		assertMatchesLocation('{ "a": |1 }', ['a', '**', 'b'], false);
+	});
+
+	// 2026-10-10: Property names and array indices both count as path segments.
+	test('location: recursive wildcard matches multiple segments', () => {
+		const input = '{ "a": { "b": [{ "c": |1 }] } }';
+		assertMatchesLocation(input, ['**', 'c']);
+		assertMatchesLocation(input, ['a', '**', 'c']);
+		assertMatchesLocation(input, ['a', '**', 0, '*']);
+		assertMatchesLocation(input, ['**', '**', 'c']);
+		assertMatchesLocation(input, ['a', '**', 'missing'], false);
+		assertMatchesLocation(input, ['**', 1, 'c'], false);
+	});
+
+	// 2026-10-10: Retry a later occurrence if a repeated property fails the suffix.
+	test('location: recursive wildcard backtracks', () => {
+		const input = '{ "a": { "b": { "a": { "c": |1 } } } }';
+		assertMatchesLocation(input, ['**', 'a', 'c']);
+		assertMatchesLocation(input, ['**', 'a', '**', 'c']);
+		assertMatchesLocation(input, ['**', 'a', 'missing'], false);
+	});
+
+
 
 });
