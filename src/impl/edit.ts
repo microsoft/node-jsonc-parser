@@ -144,7 +144,7 @@ function withFormatting(text: string, edit: Edit, options: ModificationOptions):
 		return [edit];
 	}
 	// apply the edit
-	let newText = applyEdit(text, edit);
+	const newText = applyEdit(text, edit);
 
 	// format the new text
 	let begin = edit.offset;
@@ -159,18 +159,27 @@ function withFormatting(text: string, edit: Edit, options: ModificationOptions):
 	}
 
 	const edits = format(newText, { offset: begin, length: end - begin }, { ...options.formattingOptions, keepLines: false });
+	if (edits.length === 0) {
+		const editLength = text.length - (newText.length - end) - begin;
+		return [{ offset: begin, length: editLength, content: newText.substring(begin, end) }];
+	}
 
-	// apply the formatting edits and track the begin and end offsets of the changes
-	for (let i = edits.length - 1; i >= 0; i--) {
-		const edit = edits[i];
-		newText = applyEdit(newText, edit);
+	// Formatting edits use offsets in newText. Include all of them in the replacement range.
+	for (const edit of edits) {
 		begin = Math.min(begin, edit.offset);
 		end = Math.max(end, edit.offset + edit.length);
-		end += edit.content.length - edit.length;
 	}
+	// Assemble the replacement once instead of rebuilding the document for each edit.
+	const parts: string[] = [];
+	let cursor = begin;
+	for (const edit of edits) {
+		parts.push(newText.substring(cursor, edit.offset), edit.content);
+		cursor = edit.offset + edit.length;
+	}
+	parts.push(newText.substring(cursor, end));
 	// create a single edit with all changes
 	const editLength = text.length - (newText.length - end) - begin;
-	return [{ offset: begin, length: editLength, content: newText.substring(begin, end) }];
+	return [{ offset: begin, length: editLength, content: parts.join('') }];
 }
 
 export function applyEdit(text: string, edit: Edit): string {
