@@ -4,9 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import { Edit, ParseError, Node, JSONPath, Segment, ModificationOptions } from '../main.js';
+import { Edit, ParseError, Node, JSONPath, Segment, ModificationOptions, SyntaxKind } from '../main.js';
 import { format, isEOL } from './format.js';
 import { parseTree, findNodeAtLocation } from './parser.js';
+import { createScanner } from './scanner.js';
 
 export function removeProperty(text: string, path: JSONPath, options: ModificationOptions): Edit[] {
 	return setProperty(text, path, void 0, options);
@@ -61,6 +62,16 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, op
 						removeEnd = next.offset;
 					}
 				}
+				const trailing = getTrailingComments(text, existing.parent.offset + existing.parent.length);
+				const previousTrailing = propertyIndex > 0 ? getTrailingComments(text, removeBegin) : undefined;
+				if (trailing.hasComments || previousTrailing?.hasComments) {
+					if (propertyIndex > 0 || parent.children.length === 1) {
+						removeEnd = trailing.end;
+					}
+					const separator = propertyIndex > 0 && propertyIndex < parent.children.length - 1 && trailing.hasComma ? ',' : '';
+					const content = separator + (previousTrailing?.comments || '');
+					return withFormatting(text, { offset: removeBegin, length: removeEnd - removeBegin, content }, options);
+				}
 				return withFormatting(text, { offset: removeBegin, length: removeEnd - removeBegin, content: '' }, options);
 			} else {
 				// set value of existing property
@@ -76,6 +87,12 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, op
 			if (index > 0) {
 				let previous = parent.children[index - 1];
 				edit = { offset: previous.offset + previous.length, length: 0, content: ',' + newProperty };
+				const trailing = getTrailingComments(text, edit.offset);
+				if (trailing.hasComments) {
+					const eol = /\r\n|\r|\n/.exec(text)?.[0] || options.formattingOptions?.eol || '\n';
+					edit.length = trailing.end - edit.offset;
+					edit.content = ',' + trailing.comments + eol + newProperty + (trailing.hasComma ? ',' : '');
+				}
 			} else if (parent.children.length === 0) {
 				edit = { offset: parent.offset + 1, length: 0, content: newProperty };
 			} else {
@@ -137,6 +154,31 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, op
 	} else {
 		throw new Error(`Can not add ${typeof lastSegment !== 'number' ? 'index' : 'property'} to parent of type ${parent.type}`);
 	}
+}
+
+// Comments starting on the value's line belong to that property, even after its comma.
+function getTrailingComments(text: string, offset: number) {
+	const scanner = createScanner(text);
+	scanner.setPosition(offset);
+	let end = offset;
+	let commaOffset = -1;
+	let hasComments = false;
+	let token: SyntaxKind;
+	while ((token = scanner.scan()) !== SyntaxKind.EOF) {
+		if (token === SyntaxKind.Trivia) {
+			continue;
+		} else if (token === SyntaxKind.CommaToken) {
+			commaOffset = scanner.getTokenOffset();
+		} else if (token === SyntaxKind.LineCommentTrivia || token === SyntaxKind.BlockCommentTrivia) {
+			hasComments = true;
+		} else {
+			break;
+		}
+		end = scanner.getPosition();
+	}
+	const comments = commaOffset < 0 ? text.substring(offset, end)
+		: text.substring(offset, commaOffset) + text.substring(commaOffset + 1, end);
+	return { end, comments: hasComments ? comments : '', hasComments, hasComma: commaOffset >= 0 };
 }
 
 function withFormatting(text: string, edit: Edit, options: ModificationOptions): Edit[] {
