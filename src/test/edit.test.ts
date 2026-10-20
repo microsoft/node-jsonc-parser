@@ -190,6 +190,15 @@ suite('JSON - edits', () => {
 		assertEdit(content, edits, '[]');
 	});
 
+	for (const [content, index] of [['[]', 0], ['[1]', 1], ['[1]', 99], ['[1,2]', 2], ['[1,2]', -2]] as const) {
+		test(`reject removing array index ${index} from ${content}`, () => {
+			assert.throws(() => modify(content, [index], void 0, options), {
+				name: 'Error',
+				message: `Can not remove Array index ${index} as length is not sufficient`
+			});
+		});
+	}
+
 	test('remove item in the middle of the array', () => {
 		let content = '[\n  1,\n  2,\n  3\n]';
 		let edits = modify(content, [1], void 0, options);
