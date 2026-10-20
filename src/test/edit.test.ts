@@ -6,7 +6,7 @@
 
 import * as assert from 'node:assert';
 import { suite, test } from 'node:test';
-import { Edit, FormattingOptions, ModificationOptions, modify } from '../main.js';
+import { Edit, FormattingOptions, ModificationOptions, applyEdits, modify, parse } from '../main.js';
 
 suite('JSON - edits', () => {
 
@@ -51,6 +51,27 @@ suite('JSON - edits', () => {
 		content = '{\n  "a": "b",  "x": "y"\n}';
 		edits = modify(content, ['a'], null, options);
 		assertEdit(content, edits, '{\n  "a": null,  "x": "y"\n}');
+	});
+
+	test('set the effective duplicate property value', () => {
+		const text = '{"key":1,"key":2,"outer":{"key":3,"key":4},"other":5}';
+		const topLevel = applyEdits(text, modify(text, ['key'], 6, {}));
+		assert.strictEqual(topLevel, '{"key":1,"key":6,"outer":{"key":3,"key":4},"other":5}');
+		assert.deepStrictEqual(parse(topLevel), { key: 6, outer: { key: 4 }, other: 5 });
+
+		const nested = applyEdits(text, modify(text, ['outer', 'key'], 7, {}));
+		assert.strictEqual(nested, '{"key":1,"key":2,"outer":{"key":3,"key":7},"other":5}');
+		assert.deepStrictEqual(parse(nested), { key: 2, outer: { key: 7 }, other: 5 });
+
+		const duplicateParent = '{"outer":{"key":1},"other":5,"outer":{"key":2}}';
+		const changedParent = applyEdits(duplicateParent, modify(duplicateParent, ['outer', 'key'], 8, {}));
+		assert.strictEqual(changedParent, '{"outer":{"key":1},"other":5,"outer":{"key":8}}');
+		assert.deepStrictEqual(parse(changedParent), { outer: { key: 8 }, other: 5 });
+
+		const formatted = '{\n  "key": 1,\n  "other": 5,\n  "key": 2\n}';
+		const changedFormatted = applyEdits(formatted, modify(formatted, ['key'], 9, options));
+		assert.strictEqual(changedFormatted, '{\n  "key": 1,\n  "other": 5,\n  "key": 9\n}');
+		assert.deepStrictEqual(parse(changedFormatted), { key: 9, other: 5 });
 	});
 
 	test('insert property', () => {
