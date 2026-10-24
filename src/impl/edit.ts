@@ -4,9 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 'use strict';
 
-import { Edit, ParseError, Node, JSONPath, Segment, ModificationOptions } from '../main.js';
+import { Edit, ParseError, Node, JSONPath, Segment, ModificationOptions, SyntaxKind } from '../main.js';
 import { format, isEOL } from './format.js';
 import { parseTree, findNodeAtLocation } from './parser.js';
+import { createScanner } from './scanner.js';
 
 export function removeProperty(text: string, path: JSONPath, options: ModificationOptions): Edit[] {
 	return setProperty(text, path, void 0, options);
@@ -59,6 +60,13 @@ export function setProperty(text: string, originalPath: JSONPath, value: any, op
 						// remove the comma of the next node
 						let next = parent.children[1];
 						removeEnd = next.offset;
+					} else {
+						// only property: also remove a trailing comma, `{ "a": 1, }` must not become `{ , }`
+						const scanner = createScanner(text, true);
+						scanner.setPosition(removeEnd);
+						if (scanner.scan() === SyntaxKind.CommaToken) {
+							removeEnd = scanner.getTokenOffset() + scanner.getTokenLength();
+						}
 					}
 				}
 				return withFormatting(text, { offset: removeBegin, length: removeEnd - removeBegin, content: '' }, options);

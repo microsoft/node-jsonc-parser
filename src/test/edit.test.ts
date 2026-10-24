@@ -126,6 +126,21 @@ suite('JSON - edits', () => {
 		assertEdit(content, edits, '{\n  "x": "y"\n}');
 	});
 
+	test('remove the only property with a trailing comma', () => {
+		let content = '{\n  "x": "y",\n}';
+		let edits = modify(content, ['x'], undefined, options);
+		assertEdit(content, edits, '{\n}');
+
+		content = '{\n  "a": {\n    "x": "y",\n  }\n}';
+		edits = modify(content, ['a', 'x'], undefined, options);
+		assertEdit(content, edits, '{\n  "a": {\n  }\n}');
+
+		// comments after the comma are kept
+		content = '{\n  "x": "y", // note\n}';
+		edits = modify(content, ['x'], undefined, options);
+		assertEdit(content, edits, '{ // note\n}');
+	});
+
 	test('set item', () => {
 		let content = '{\n  "x": [1, 2, 3],\n  "y": 0\n}';
 
