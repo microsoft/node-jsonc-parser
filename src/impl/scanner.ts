@@ -247,7 +247,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 
 			// comments
 			case CharacterCodes.slash: {
-				const start = pos - 1;
+				const start = pos;
 				// Single-line comment
 				if (text.charCodeAt(pos + 1) === CharacterCodes.slash) {
 					pos += 2;
