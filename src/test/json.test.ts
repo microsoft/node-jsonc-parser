@@ -8,7 +8,7 @@ import * as assert from 'node:assert';
 import { suite, test } from 'node:test';
 import {
 	SyntaxKind, createScanner, parse, getLocation, Node, ParseError, parseTree, ParseErrorCode,
-	ParseOptions, Segment, findNodeAtLocation, getNodeValue, getNodePath, ScanError, visit, JSONVisitor, JSONPath
+	ParseOptions, Segment, findNodeAtLocation, getNodeValue, getNodePath, ScanError, visit, JSONVisitor, JSONPath, stripComments
 } from '../main.js';
 
 function assertKinds(text: string, ...kinds: SyntaxKind[]): void {
@@ -140,6 +140,25 @@ suite('JSON', () => {
 		assertKinds(']', SyntaxKind.CloseBracketToken);
 		assertKinds(':', SyntaxKind.ColonToken);
 		assertKinds(',', SyntaxKind.CommaToken);
+	});
+
+	test('comment token value', () => {
+		for (const [text, comment] of [['[1, // line', '// line'], ['{"a":1,/* block */}', '/* block */'], ['/* first */', '/* first */']]) {
+			const scanner = createScanner(text);
+			let kind: SyntaxKind;
+			while ((kind = scanner.scan()) !== SyntaxKind.LineCommentTrivia && kind !== SyntaxKind.BlockCommentTrivia) {
+				assert.notStrictEqual(kind, SyntaxKind.EOF, text);
+			}
+			assert.strictEqual(scanner.getTokenValue(), comment, text);
+		}
+	});
+
+	test('stripComments keeps offsets with a replace character', () => {
+		const text = '{"a": 1, /* x\n y */ "b": 2} // end';
+		const stripped = stripComments(text, ' ');
+		assert.strictEqual(stripped, '{"a": 1,     \n      "b": 2}       ');
+		assert.strictEqual(stripped.length, text.length);
+		assert.strictEqual(stripComments(text), '{"a": 1,  "b": 2} ');
 	});
 
 	test('comments', () => {
