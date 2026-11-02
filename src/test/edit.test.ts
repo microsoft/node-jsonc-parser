@@ -243,4 +243,19 @@ suite('JSON - edits', () => {
 		let edits = modify(content, ['foo', 'foo2'], 'bar', options);
 		assertEdit(content, edits, '{\n  "foo": {\n    "foo2": "bar"\n  }\n}');
 	});
+
+	test('combine multiple formatting edits', () => {
+		let content = '{\n  "x": "y",\n  "foo": "bar"\n}';
+		let edits = modify(content, ['x'], { items: [1, 2, 3] }, options);
+		assertEdit(content, edits, '{\n  "x": {\n    "items": [\n      1,\n      2,\n      3\n    ]\n  },\n  "foo": "bar"\n}');
+
+		edits = modify(content, ['x'], { items: [1, 2, 3, { inner: [4, 5, 6] }] }, options);
+		assertEdit(content, edits, '{\n  "x": {\n    "items": [\n      1,\n      2,\n      3,\n      {\n        "inner": [\n          4,\n          5,\n          6\n        ]\n      }\n    ]\n  },\n  "foo": "bar"\n}');
+
+		edits = modify(content, ['x'], { items: [[1, 2, 3], [4, 5, 6]] }, options);
+		assertEdit(content, edits, '{\n  "x": {\n    "items": [\n      [\n        1,\n        2,\n        3\n      ],\n      [\n        4,\n        5,\n        6\n      ]\n    ]\n  },\n  "foo": "bar"\n}');
+
+		edits = modify(content, ['added'], { hello: 'world', items: [1, 2, 3] }, options);
+		assertEdit(content, edits, '{\n  "x": "y",\n  "foo": "bar",\n  "added": {\n    "hello": "world",\n    "items": [\n      1,\n      2,\n      3\n    ]\n  }\n}');
+	});
 });
