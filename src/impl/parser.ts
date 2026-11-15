@@ -326,15 +326,16 @@ export function findNodeAtLocation(root: Node | undefined, path: JSONPath): Node
 }
 
 /**
- * Gets the JSON path of the given JSON DOM node
+ * Gets the JSON path of the given JSON DOM node.
+ * A property node, its key node and its value node share the same path.
  */
 export function getNodePath(node: Node): JSONPath {
 	if (!node.parent || !node.parent.children) {
 		return [];
 	}
 	const path = getNodePath(node.parent);
-	if (node.parent.type === 'property') {
-		const key = node.parent.children[0].value;
+	if (node.type === 'property') {
+		const key = node.children![0].value;
 		path.push(key);
 	} else if (node.parent.type === 'array') {
 		const index = node.parent.children.indexOf(node);

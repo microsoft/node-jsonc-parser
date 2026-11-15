@@ -716,6 +716,31 @@ suite('JSON', () => {
 		assertNodeAtLocation(root, ['key3', 'key32'], 32);
 	});
 
+	test('tree: property node paths', () => {
+		const root = parseTree('{ "outer": [{ "name": 1, "": { "nested": true } }] }')!;
+		const paths: JSONPath[] = [['outer'], ['outer', 0, 'name'], ['outer', 0, ''], ['outer', 0, '', 'nested']];
+		assert.deepStrictEqual(getNodePath(root), []);
+		for (const path of paths) {
+			const value = findNodeAtLocation(root, path)!;
+			const property = value.parent!;
+			assert.strictEqual(property.type, 'property');
+			assert.deepStrictEqual(getNodePath(property), path);
+			assert.deepStrictEqual(getNodePath(property.children![0]), path);
+			assert.deepStrictEqual(getNodePath(value), path);
+		}
+	});
+
+	test('tree: incomplete property node paths', () => {
+		for (const content of ['{ "outer": { "missing": } }', '{ "outer": { "missing"']) {
+			const root = parseTree(content)!;
+			const property = findNodeAtLocation(root, ['outer'])!.children![0];
+			assert.strictEqual(property.type, 'property');
+			assert.strictEqual(property.children!.length, 1);
+			assert.deepStrictEqual(getNodePath(property), ['outer', 'missing']);
+			assert.deepStrictEqual(getNodePath(property.children![0]), ['outer', 'missing']);
+		}
+	});
+
 	test('location: matches', () => {
 		assertMatchesLocation('{ "dependencies": { | } }', ['dependencies']);
 		assertMatchesLocation('{ "dependencies": { "fo| } }', ['dependencies']);

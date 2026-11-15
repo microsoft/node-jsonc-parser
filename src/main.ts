@@ -124,7 +124,8 @@ export const findNodeAtLocation: (root: Node, path: JSONPath) => Node | undefine
 export const findNodeAtOffset: (root: Node, offset: number, includeRightBound?: boolean) => Node | undefined = parser.findNodeAtOffset;
 
 /**
- * Gets the JSON path of the given JSON DOM node
+ * Gets the JSON path of the given JSON DOM node.
+ * A property node, its key node and its value node share the same path.
  */
 export const getNodePath: (node: Node) => JSONPath = parser.getNodePath;
 
