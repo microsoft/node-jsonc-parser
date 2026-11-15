@@ -237,7 +237,8 @@ export function findNodeAtLocation(root: Node, path: JSONPath): Node | undefined
 export function findNodeAtOffset(root: Node, offset: number, includeRightBound?: boolean) : Node | undefined;
 
 /**
- * Gets the JSON path of the given JSON DOM node
+ * Gets the JSON path of the given JSON DOM node.
+ * A property node, its key node and its value node share the same path.
  */
 export function getNodePath(node: Node): JSONPath;
 

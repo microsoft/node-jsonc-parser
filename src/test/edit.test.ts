@@ -6,7 +6,7 @@
 
 import * as assert from 'node:assert';
 import { suite, test } from 'node:test';
-import { Edit, FormattingOptions, ModificationOptions, modify } from '../main.js';
+import { Edit, FormattingOptions, ModificationOptions, modify, parseTree, findNodeAtLocation, getNodePath } from '../main.js';
 
 suite('JSON - edits', () => {
 
@@ -110,6 +110,14 @@ suite('JSON - edits', () => {
 		content = '//comment';
 		edits = modify(content, ['foo', 0], 'bar', options);
 		assertEdit(content, edits, '{\n  "foo": [\n    "bar"\n  ]\n} //comment');
+	});
+
+	test('remove property using its node path', () => {
+		const content = '{"outer":{"remove":1,"keep":2},"sibling":3}';
+		const root = parseTree(content)!;
+		const property = findNodeAtLocation(root, ['outer'])!.children![0];
+		const edits = modify(content, getNodePath(property), undefined, {});
+		assertEdit(content, edits, '{"outer":{"keep":2},"sibling":3}');
 	});
 
 	test('remove property', () => {
