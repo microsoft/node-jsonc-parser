@@ -157,6 +157,69 @@ suite('JSON', () => {
 		assertKinds('/ ttt', SyntaxKind.Unknown, SyntaxKind.Trivia, SyntaxKind.Unknown);
 	});
 
+	for (const [comment, endLine, endCharacter] of [
+		['/*', 0, 2],
+		['/**', 0, 3],
+		['/*\n', 1, 0],
+		['/*\r', 1, 0],
+		['/*\r\n', 1, 0],
+		['/*\n\n', 2, 0],
+		['/*\r\n\r', 2, 0],
+		['/*\ntext', 1, 4]
+	] as const) {
+		test(`unterminated block comment EOF ${JSON.stringify(comment)}`, () => {
+			const scanner = createScanner(comment);
+			assert.strictEqual(scanner.scan(), SyntaxKind.BlockCommentTrivia);
+			assert.strictEqual(scanner.getTokenError(), ScanError.UnexpectedEndOfComment);
+			assert.strictEqual(scanner.getTokenOffset(), 0);
+			assert.strictEqual(scanner.getTokenLength(), comment.length);
+			assert.strictEqual(scanner.getPosition(), comment.length);
+			assert.strictEqual(scanner.getTokenStartLine(), 0);
+			assert.strictEqual(scanner.getTokenStartCharacter(), 0);
+			for (let i = 0; i < 2; i++) {
+				assert.strictEqual(scanner.scan(), SyntaxKind.EOF);
+				assert.strictEqual(scanner.getTokenError(), ScanError.None);
+				assert.strictEqual(scanner.getTokenOffset(), comment.length);
+				assert.strictEqual(scanner.getTokenLength(), 0);
+				assert.strictEqual(scanner.getPosition(), comment.length);
+				assert.strictEqual(scanner.getTokenStartLine(), endLine);
+				assert.strictEqual(scanner.getTokenStartCharacter(), endCharacter);
+			}
+		});
+	}
+
+	for (const eol of ['\n', '\r', '\r\n']) {
+		test(`unterminated block comment diagnostic ${JSON.stringify(eol)}`, () => {
+			const text = `[/*${eol}`;
+			const errors: VisitorError[] = [];
+			visit(text, {
+				onError: (error, offset, length, startLine, startCharacter) => {
+					errors.push({ error, offset, length, startLine, startCharacter });
+				}
+			});
+			assert.deepStrictEqual(errors, [
+				{ error: ParseErrorCode.UnexpectedEndOfComment, offset: 1, length: text.length - 1, startLine: 0, startCharacter: 1 },
+				{ error: ParseErrorCode.CloseBracketExpected, offset: text.length, length: 0, startLine: 1, startCharacter: 0 }
+			]);
+		});
+	}
+
+	test('closed block comment preserves following token positions', () => {
+		for (const comment of ['/**/', '/***/', '/*\n*/', '/*\r*/', '/*\r\n*/', '/*\n\n*/']) {
+			const scanner = createScanner(comment + 'true');
+			assert.strictEqual(scanner.scan(), SyntaxKind.BlockCommentTrivia);
+			assert.strictEqual(scanner.getTokenError(), ScanError.None);
+			assert.strictEqual(scanner.getTokenLength(), comment.length);
+			assert.strictEqual(scanner.scan(), SyntaxKind.TrueKeyword);
+			assert.strictEqual(scanner.getTokenError(), ScanError.None);
+			assert.strictEqual(scanner.getTokenOffset(), comment.length);
+			assert.strictEqual(scanner.getTokenLength(), 4);
+			assert.strictEqual(scanner.getTokenStartLine(), comment.split(/\r\n|\r|\n/).length - 1);
+			const lastLineBreak = Math.max(comment.lastIndexOf('\n'), comment.lastIndexOf('\r'));
+			assert.strictEqual(scanner.getTokenStartCharacter(), comment.length - lastLineBreak - 1);
+		}
+	});
+
 	test('strings', () => {
 		assertKinds('"test"', SyntaxKind.StringLiteral);
 		assertKinds('"\\""', SyntaxKind.StringLiteral);
