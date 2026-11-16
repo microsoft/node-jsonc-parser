@@ -267,9 +267,8 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 				if (text.charCodeAt(pos + 1) === CharacterCodes.asterisk) {
 					pos += 2;
 
-					const safeLength = len - 1; // For lookahead.
 					let commentClosed = false;
-					while (pos < safeLength) {
+					while (pos < len) {
 						const ch = text.charCodeAt(pos);
 
 						if (ch === CharacterCodes.asterisk && text.charCodeAt(pos + 1) === CharacterCodes.slash) {
@@ -291,7 +290,6 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 					}
 
 					if (!commentClosed) {
-						pos++;
 						scanError = ScanError.UnexpectedEndOfComment;
 					}
 
