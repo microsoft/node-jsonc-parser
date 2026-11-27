@@ -21,6 +21,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 		lineStartOffset = 0,
 		tokenLineStartOffset = 0,
 		prevTokenLineStartOffset = 0,
+		lazyValue = false,
 		scanError: ScanError = ScanError.None;
 
 	function scanHexDigits(count: number, exact?: boolean): number {
@@ -52,6 +53,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 	function setPosition(newPosition: number) {
 		pos = newPosition;
 		value = '';
+		lazyValue = false;
 		tokenOffset = 0;
 		token = SyntaxKind.Unknown;
 		scanError = ScanError.None;
@@ -181,6 +183,7 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 	function scanNext(): SyntaxKind {
 
 		value = '';
+		lazyValue = false;
 		scanError = ScanError.None;
 
 		tokenOffset = pos;
@@ -194,31 +197,36 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 		}
 
 		let code = text.charCodeAt(pos);
-		// trivia: whitespace
-		if (isWhiteSpace(code)) {
-			do {
-				pos++;
-				value += String.fromCharCode(code);
-				code = text.charCodeAt(pos);
-			} while (isWhiteSpace(code));
-
-			return token = SyntaxKind.Trivia;
-		}
-
-		// trivia: newlines
-		if (isLineBreak(code)) {
-			pos++;
-			value += String.fromCharCode(code);
-			if (code === CharacterCodes.carriageReturn && text.charCodeAt(pos) === CharacterCodes.lineFeed) {
-				pos++;
-				value += '\n';
-			}
-			lineNumber++;
-			tokenLineStartOffset = pos;
-			return token = SyntaxKind.LineBreakTrivia;
-		}
-
 		switch (code) {
+			// trivia: whitespace
+			case CharacterCodes.space:
+			case CharacterCodes.tab:
+				do {
+					pos++;
+					code = text.charCodeAt(pos);
+				} while (code === CharacterCodes.space || code === CharacterCodes.tab);
+				lazyValue = true; // value is computed on demand in getTokenValue
+				return token = SyntaxKind.Trivia;
+
+			// trivia: newlines
+			case CharacterCodes.lineFeed:
+				pos++;
+				value = '\n';
+				lineNumber++;
+				tokenLineStartOffset = pos;
+				return token = SyntaxKind.LineBreakTrivia;
+			case CharacterCodes.carriageReturn:
+				pos++;
+				if (text.charCodeAt(pos) === CharacterCodes.lineFeed) {
+					pos++;
+					value = '\r\n';
+				} else {
+					value = '\r';
+				}
+				lineNumber++;
+				tokenLineStartOffset = pos;
+				return token = SyntaxKind.LineBreakTrivia;
+
 			// tokens: []{}:,
 			case CharacterCodes.openBrace:
 				pos++;
@@ -335,13 +343,22 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 					code = text.charCodeAt(pos);
 				}
 				if (tokenOffset !== pos) {
-					value = text.substring(tokenOffset, pos);
 					// keywords: true, false, null
-					switch (value) {
-						case 'true': return token = SyntaxKind.TrueKeyword;
-						case 'false': return token = SyntaxKind.FalseKeyword;
-						case 'null': return token = SyntaxKind.NullKeyword;
+					const wordLength = pos - tokenOffset;
+					if (wordLength === 4) {
+						if (text.startsWith('true', tokenOffset)) {
+							value = 'true';
+							return token = SyntaxKind.TrueKeyword;
+						}
+						if (text.startsWith('null', tokenOffset)) {
+							value = 'null';
+							return token = SyntaxKind.NullKeyword;
+						}
+					} else if (wordLength === 5 && text.startsWith('false', tokenOffset)) {
+						value = 'false';
+						return token = SyntaxKind.FalseKeyword;
 					}
+					value = text.substring(tokenOffset, pos);
 					return token = SyntaxKind.Unknown;
 				}
 				// some
@@ -383,7 +400,13 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 		getPosition: () => pos,
 		scan: ignoreTrivia ? scanNextNonTrivia : scanNext,
 		getToken: () => token,
-		getTokenValue: () => value,
+		getTokenValue: () => {
+			if (lazyValue) {
+				value = text.substring(tokenOffset, pos);
+				lazyValue = false;
+			}
+			return value;
+		},
 		getTokenOffset: () => tokenOffset,
 		getTokenLength: () => pos - tokenOffset,
 		getTokenStartLine: () => lineStartOffset,
