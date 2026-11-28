@@ -732,4 +732,24 @@ suite('JSON - formatter', () => {
 
 		format(content, expected, true, false, true);
 	});
+
+	test('deeply nested content', () => {
+		// the indentation reaches and goes past the size of the cached line break strings
+		for (const insertSpaces of [true, false]) {
+			const depth = 250;
+			const indent = (level: number) => (insertSpaces ? '  ' : '\t').repeat(level);
+			const content = '['.repeat(depth) + ']'.repeat(depth);
+
+			const expected: string[] = [];
+			for (let i = 0; i < depth - 1; i++) {
+				expected.push(indent(i) + '[');
+			}
+			expected.push(indent(depth - 1) + '[]');
+			for (let i = depth - 2; i >= 0; i--) {
+				expected.push(indent(i) + ']');
+			}
+
+			format(content, expected.join('\n'), insertSpaces);
+		}
+	});
 });

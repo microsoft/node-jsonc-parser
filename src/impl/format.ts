@@ -59,7 +59,7 @@ export function format(documentText: string, range: Range | undefined, options: 
 
 		const amountOfSpaces = indentValue.length * (initialIndentLevel + indentLevel);
 
-		if (!eolFastPathSupported || amountOfSpaces > cachedBreakLinesWithSpaces[indentType][eol as SupportedEOL].length) {
+		if (!eolFastPathSupported || amountOfSpaces >= cachedBreakLinesWithSpaces[indentType][eol as SupportedEOL].length) {
 			return eol + repeat(indentValue, initialIndentLevel + indentLevel);
 		}
 
